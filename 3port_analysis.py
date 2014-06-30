@@ -98,6 +98,14 @@ def make_a_figure(data):
 
     plt.show() #show each figure, user can save if he/she wants
 
+    #make plot of the % of trials in center
+    plt.close("all")
+    plt.plot(data["x_vals"], data["pct_trials_stim_in_center"], "bo")
+    plt.axis([0, len(data["x_vals"]), 0.0, 100.0])
+    plt.title("% trials with stim in center " + data["animal_name"])
+    plt.xlabel("Session number")
+    plt.show()
+
 def analyze_animal_sessions(animal_name, sessions):
     '''
     Analyzes one animals' sessions and outputs dict with x and y value lists
@@ -121,12 +129,15 @@ def analyze_animal_sessions(animal_name, sessions):
         list_of_session_stats]
     total_trials_stim_in_center_y = [each["trials_with_stim_in_center"] for \
         each in list_of_session_stats]
+    pct_trials_stim_in_center = [each["pct_trials_stim_in_center"] for \
+        each in list_of_session_stats]
 
     return {"x_vals": x_vals, #x axis will be session number for all graphs
             "total_pct_correct_y_vals": pct_corr_whole_session_y,
             "pct_corr_in_center_y_vals": pct_corr_in_center_y,
             "total_trials_y_vals": total_num_trials_y,
             "num_trials_stim_in_center_y_vals": total_trials_stim_in_center_y,
+            "pct_trials_stim_in_center": pct_trials_stim_in_center,
             "animal_name": animal_name}
 
 def get_stats_for_each_session(animal_name, sessions):
