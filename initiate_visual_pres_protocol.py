@@ -10,7 +10,7 @@ def get_animals_and_their_session_filenames(path):
         folder names in 'input' folder--each animal should have its own
         folder with .mwk session files) and a list of .mwk filename strings as
         values.
-            e.g. {'V1': ['V1_140501', 'V1_140502']}
+            e.g. {'V1': ['V1_140501.mwk', 'V1_140502.mwk']}
 
     :param path: a string of the directory name containing animals' folders
     '''
