@@ -260,9 +260,39 @@ def get_session_statistics(animal_name, session_filename):
     df = pymworks.open_file(path)
     events = df.get_events(["success", "failure", "ignore", "stm_size"])
 
-    result = []
+    trials = []
+    index = 0
+    trial_num = 1
+    while index < len(events):
+        if events[index].name == "success" and events[index].value == 1:
 
-    return result
+            try:
+                if events[index + 1].name == "stm_size":
+
+                    try:
+                        #dont add if there's another stm_size after first stm_size
+                        if events[index + 2].name != "stm_size":
+                            trial = {
+                                "trial_num": trial_num,
+                                "behavior_outcome": "success",
+                                "stm_size": events[index + 1].value
+                            }
+                            trials.append(trial)
+                            trial_num += 1
+                    except IndexError:
+                        #add to results list if final event is a stm_size
+                        trial = {
+                            "trial_num": trial_num,
+                            "behavior_outcome": "success",
+                            "stm_size": events[index + 1].value
+                        }
+                        trials.append(trial)
+
+            except IndexError:
+                print "Last event was a success with no size data..."
+        index += 1
+
+    return trials
 
 if __name__ == "__main__":
     animals_and_sessions = get_animals_and_their_session_filenames('input')
