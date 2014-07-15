@@ -264,17 +264,19 @@ def get_session_statistics(animal_name, session_filename):
     index = 0
     trial_num = 1
     while index < len(events):
-        if events[index].name == "success" and events[index].value == 1:
-
+        if events[index].name != "stm_size" and events[index].value == 1:
+            #only do try statement if event name is success, failure, or ignore
             try:
                 if events[index + 1].name == "stm_size":
-
+                    #only enter this try statement if success, failure, or
+                    #ignore is followed by a stm_size
                     try:
-                        #dont add if there's another stm_size after first stm_size
+                        #dont add if there's another stm_size after first
+                        #stm_size
                         if events[index + 2].name != "stm_size":
                             trial = {
                                 "trial_num": trial_num,
-                                "behavior_outcome": "success",
+                                "behavior_outcome": events[index].name,
                                 "stm_size": events[index + 1].value
                             }
                             trials.append(trial)
@@ -283,13 +285,13 @@ def get_session_statistics(animal_name, session_filename):
                         #add to results list if final event is a stm_size
                         trial = {
                             "trial_num": trial_num,
-                            "behavior_outcome": "success",
+                            "behavior_outcome": events[index].name,
                             "stm_size": events[index + 1].value
                         }
                         trials.append(trial)
 
             except IndexError:
-                print "Last event was a success with no size data..."
+                print "Last event was a behavior_outcome with no size data..."
         index += 1
 
     return trials
