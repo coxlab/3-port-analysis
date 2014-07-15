@@ -177,7 +177,7 @@ def get_stats_for_each_session(animal_name, sessions):
     result = []
     session_num = 1
     for session in sessions:
-        all_trials = get_session_statistics(animal_name, session)
+        all_trials = get_session_trials(animal_name, session)
 
         #make dict to store session data
         session_result = {"session_number": session_num,
@@ -238,7 +238,7 @@ def get_stats_for_each_session(animal_name, sessions):
         session_num += 1
     return result
 
-def get_session_statistics(animal_name, session_filename):
+def get_session_trials(animal_name, session_filename):
     '''
     Returns a time-ordered list of dicts, where each dict is info about a trial.
     e.g. [{"trial_num": 1,
