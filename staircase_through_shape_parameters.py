@@ -42,17 +42,16 @@ def analyze_sessions(animals_and_sessions, graph_as_group=False):
 
     results = [] #list of multiprocessing.AsyncResult objects
     for animal, sessions in animals_and_sessions.iteritems():
-        result = pool.apply_async(analyze_animal_sessions,
+        result = pool.apply_async(get_data_for_figure,
             args=(animal, sessions))
         results.append(result)
     pool.close()
     pool.join() #block until all the data has been processed
     if graph_as_group:
         raise NotImplementedError, "Group graphing coming soon..."
-    #
-    print("Graphing session data...")
+
     for each in results:
-        data_for_animal = each.get() #returns analyze_animal_sessions result
+        data_for_animal = each.get() #returns get_data_for_figure result
         make_a_figure(data_for_animal)
 
     print("Finished")
@@ -62,12 +61,12 @@ def make_a_figure(data):
     Shows a graph of an animal's performance and trial info.
 
     :param data: a dict with x and y value lists returned by
-        analyze_animal_sessions()
+        get_data_for_figure()
     '''
 
-    f, ax_arr = plt.subplots(2, 2) #make 4 subplots for figure
+    f, ax_arr = plt.subplots(2, 1) #make 2 subplots for figure
     f.suptitle(data["animal_name"]) #set figure title to animal's name
-    f.subplots_adjust(bottom=0.08, hspace=0.4) #fix overlapping labels
+    #f.subplots_adjust(bottom=0.08, hspace=0.4) #fix overlapping labels
 
     ax_arr[0, 0].plot(data["x_vals"], data["total_pct_correct_y_vals"], "bo")
     ax_arr[0, 0].set_title("% correct - all trials")
@@ -106,13 +105,40 @@ def make_a_figure(data):
     plt.xlabel("Session number")
     plt.show()
 
-def analyze_animal_sessions(animal_name, sessions):
+def get_data_for_figure(animal_name, sessions):
     '''
     Analyzes one animals' sessions and outputs dict with x and y value lists
     for different types of graphs, e.g. percent correct, total trials, etc.
     See return dict below.
     This is wrapped by analyze_sessions() so it can run in a process on
     each CPU core.
+
+    Returns a dict with x_vals list for x axes (session number for all graphs).
+        The by_size keys store dicts with the stimulus size as keys and their
+        list of y values as values.
+
+        For example,
+
+        {
+            "x_vals": [1, 2, 3, 4],
+            "all_sizes": ["40.0", "37.5"],
+            "animal_name": "AB1",
+            "y_vals_total_trials_by_size": {
+                "40.0": [2, 2, 4, 8], #total trials size 40.0 in each session
+                "37.5": [0, 0, 2, 4] #first 2 sessions had no 37.5
+                                     #degree vis. angle stimuli
+            }
+            "y_vals_d_prime_by_size": {
+                "40.0": [1.0, 0.8, 1.0, 1.0], #d prime for trials of size 40.0
+                                              #in each session
+                "37.5": [None, None, 1.0, 0.8]
+            }
+        }
+
+        NOTE: if there's no d_prime for a size in a session, the value is None
+            (None values don't get graphed). If there are no trials with
+            stimulus size for a session, that session's total_trials = 0 in the
+            list.
 
     :param animal_name: name of the animal (string)
     :param sessions: the animal's session filenames (list of strings)
@@ -121,24 +147,48 @@ def analyze_animal_sessions(animal_name, sessions):
     list_of_session_stats = get_stats_for_each_session(animal_name, sessions)
 
     x_vals = [each["session_number"] for each in list_of_session_stats]
-    pct_corr_whole_session_y = [each["pct_correct_whole_session"] for each in \
-        list_of_session_stats]
-    pct_corr_in_center_y = [each["pct_correct_stim_in_center"] for each in \
-        list_of_session_stats]
-    total_num_trials_y = [each["total_trials"] for each in \
-        list_of_session_stats]
-    total_trials_stim_in_center_y = [each["trials_with_stim_in_center"] for \
-        each in list_of_session_stats]
-    pct_trials_stim_in_center = [each["pct_trials_stim_in_center"] for \
-        each in list_of_session_stats]
+
+    all_sizes_for_all_sessions = get_sizes_in_stats_list(list_of_session_stats)
+
+    y_vals_d_prime = {}
+    y_vals_num_trials = {}
+    for stim_size in all_sizes_for_all_sessions:
+        y_vals_d_prime[stim_size] = []
+        y_vals_num_trials[stim_size] = []
+        for session in list_of_session_stats:
+            if stim_size in session["d_prime_by_size"]:
+                y_vals_d_prime[stim_size].append(session["d_prime_by_size"]\
+                    [stim_size])
+            else:
+                y_vals_d_prime[stim_size].append(None)
+
+            if stim_size in session["total_trials_by_size"]:
+                y_vals_num_trials[stim_size].append(session[\
+                    "total_trials_by_size"][stim_size])
+            else:
+                y_vals_num_trials[stim_size].append(0)
 
     return {"x_vals": x_vals, #x axis will be session number for all graphs
-            "total_pct_correct_y_vals": pct_corr_whole_session_y,
-            "pct_corr_in_center_y_vals": pct_corr_in_center_y,
-            "total_trials_y_vals": total_num_trials_y,
-            "num_trials_stim_in_center_y_vals": total_trials_stim_in_center_y,
-            "pct_trials_stim_in_center": pct_trials_stim_in_center,
+            "all_sizes": all_sizes_for_all_sessions,
+            "y_vals_total_trials_by_size": y_vals_num_trials,
+            "y_vals_d_prime_by_size": y_vals_d_prime,
             "animal_name": animal_name}
+
+def get_sizes_in_stats_list(list_of_session_stats):
+    '''
+    Returns a list of stimulus size strings. This list contains sizes present
+    in ANY session in the list_of_session_stats, not necessarily ALL sessions.
+
+    :param list_of_session_stats: the list returned by
+        get_stats_for_each_session()
+    '''
+    sizes = []
+    for each in list_of_session_stats:
+        session_sizes = each["total_trials_by_size"].keys()
+        for size in session_sizes:
+            if not size in sizes:
+                sizes.append(size)
+    return sizes
 
 def get_stats_for_each_session(animal_name, sessions):
     '''
