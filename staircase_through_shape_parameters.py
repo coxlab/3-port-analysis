@@ -144,37 +144,66 @@ def get_stats_for_each_session(animal_name, sessions):
     '''
     Returns a list of dicts with statistics about each session for an
     animal. e.g.
-    result = [{
+    all_session_results = [{
+        'filename': 'AB1_140617.mwk',
         'session_number': 1,
         'ignores': 2,
         'successes': 2,
         'failures': 0,
-        'pct_correct_whole_session': 50.0,
-        'pct_correct_stim_in_center': 50.0,
         'total_trials': 4,
-        'trials_with_stim_in_center': 4,
-        'pct_trials_stim_in_center': 100.0
+        'd_prime_overall': 1.0,
+        'pct_correct_overall': 50.0,
+        'pct_failure_overall': 0.0,
+        'pct_ignore_overall': 50.0,
+        'd_prime_by_size': {
+            '40.0': 1.0,
+            '35.0': 0.8,
+            etc
+        },
+        'pct_correct_by_size': {
+            '40.0': 50.0,
+            etc
+        },
+        'pct_failure_by_size': {
+            '40.0': 0.0,
+            etc
+        }
+        ...
+        other keys in result:
+        'pct_ignore_by_size',
+        'total_trials_by_size'
+
     },
 
     #Note the NoneType values in this session
 
-    { 'session_number': 2,
-      'ignores': 0,
-      'successes': 0,
-      'failures': 0,
-      'pct_correct_whole_session': None,
-      'pct_correct_stim_in_center': None,
-      'total_trials': 0,
-      'trials_with_stim_in_center': 0,
-      'pct_trials_stim_in_center': None}]
+    {
+        'filename': 'AB1_140618.mwk',
+        'session_number': 2,
+        'ignores': 0,
+        'successes': 0,
+        'failures': 0,
+        'total_trials': 0,
+        'd_prime_overall': None,
+        'pct_correct_overall': None,
+        'pct_failure_overall': None,
+        'pct_ignore_overall': None
+        'd_prime_by_size': key: size value: None,
+        'pct_correct_by_size': key: size value: None,
+        'pct_failure_by_size': key: size value: None
+        ...
+        other keys in result:
+        'pct_ignore_by_size',
+        'total_trials_by_size',
+    }]
 
-    NOTE: if there are no trials for the denominator of a percentage key
-        (e.g. pct_correct_stim_in_center), the key's value is set to None.
+    NOTE: if there are no trials for the denominator of a key
+        (e.g. pct_correct or d_prime), the key's value is set to None.
         Behavior outcomes (e.g. ignores, successes, etc.) with no occurances
         are left with value = 0.
     '''
-
-    result = []
+    #TODO break this down into more functions...it's a bit difficult to read
+    all_session_results = []
     session_num = 1
     for session in sessions:
         all_trials = get_session_trials(animal_name, session)
@@ -183,60 +212,126 @@ def get_stats_for_each_session(animal_name, sessions):
         session_result = {"session_number": session_num,
                           "total_trials": len(all_trials),
                           "filename": session}
-        #go through each trial to get stats
-        all_success = 0
-        all_failure = 0
-        all_ignore = 0
-        success_in_center = 0
-        failure_in_center = 0
-        ignore_in_center = 0
+
+
+        total_trials_by_size = {}
+        successes = 0
+        failures = 0
+        ignores = 0
+        #keep track of total successes and failures for each size
+        num_failure_by_size = {}
+        num_success_by_size = {}
+        num_ignores_by_size = {}
+
         for trial in all_trials:
+            #add trial to total trials for each size
+            try:
+                total_trials_by_size[str(trial["stm_size"])] += 1
+            except KeyError:
+                total_trials_by_size[str(trial["stm_size"])] = 1
+
+            #track successes and failures for each size, will use for d'
             if trial["behavior_outcome"] == "success":
-                if trial["stm_pos_x"] == 0.0:
-                    success_in_center += 1
-                all_success += 1
+                successes += 1
+                try:
+                    num_success_by_size[str(trial["stm_size"])] += 1
+                except KeyError:
+                    num_success_by_size[str(trial["stm_size"])] = 1
+
             elif trial["behavior_outcome"] == "failure":
-                if trial["stm_pos_x"] == 0.0:
-                    failure_in_center += 1
-                all_failure += 1
+                failures += 1
+                try:
+                    num_failure_by_size[str(trial["stm_size"])] += 1
+                except KeyError:
+                    num_failure_by_size[str(trial["stm_size"])] = 1
             elif trial["behavior_outcome"] == "ignore":
-                if trial["stm_pos_x"] == 0.0:
-                    ignore_in_center += 1
-                all_ignore += 1
+                ignores += 1
+                try:
+                    num_ignores_by_size[str(trial["stm_size"])] += 1
+                except KeyError:
+                    num_ignores_by_size[str(trial["stm_size"])] = 1
             else:
-                print "No behavior_outcome for %s %s\
-                , trial number %s" % (animal_name, session, trial["trial_num"])
+                #this really shouldnt happen, but just in case...
+                print "No behavior_outcome in trial ", trial["trial_num"], \
+                    "for animal ", animal_name, " session ", session
+                #dont include this trial in total trials
+                total_trials_by_size[str(trial["stm_size"])] -= 1
 
-        #add session data to session result dict
-        session_result["successes"] = all_success
-        session_result["failures"] = all_failure
-        session_result["ignores"] = all_ignore
+        #done with for loop, now populate data for session_result
+        #first add data we already have...
+        session_result["successes"] = successes
+        session_result["failures"] = failures
+        session_result["ignores"] = ignores
         try:
-            session_result["pct_correct_whole_session"] = (float(all_success)/\
-                (float(all_success + all_ignore + all_failure))) * 100.0
+            session_result["d_prime_overall"] = (float(successes)/float(\
+                successes + failures)) - (float(failures)/float(\
+                successes + failures))
         except ZeroDivisionError:
-            session_result["pct_correct_whole_session"] = None
-        try:
-            session_result["pct_correct_stim_in_center"] = \
-                (float(success_in_center)/(float(success_in_center + \
-                failure_in_center + ignore_in_center))) * 100.0
-        except ZeroDivisionError:
-            session_result["pct_correct_stim_in_center"] = None
+            session_result["d_prime_overall"] = None
+        session_result["total_trials_by_size"] = total_trials_by_size
 
-        session_result["trials_with_stim_in_center"] = \
-            success_in_center + failure_in_center + ignore_in_center
-        try:
-            session_result["pct_trials_stim_in_center"] = \
-                (float(session_result["trials_with_stim_in_center"])/\
-                (float(len(all_trials)))) * 100.0
-        except ZeroDivisionError:
-            session_result["pct_trials_stim_in_center"] = None
+        #now get ready to add data from by_size dicts...
+        d_prime_by_size = {}
+        pct_correct_by_size = {}
+        pct_failure_by_size = {}
+        pct_ignore_by_size = {}
 
-        #add each session's result dict to the list of session result dicts
-        result.append(session_result)
+        for stim_size in total_trials_by_size:
+            #add any missing size keys with 0 value to make life easier
+            num_success_by_size = addMissingKey(num_success_by_size, stim_size)
+            num_failure_by_size = addMissingKey(num_failure_by_size, stim_size)
+            num_ignores_by_size = addMissingKey(num_ignores_by_size, stim_size)
 
+            try:
+                d_prime_by_size[stim_size] = (float(num_success_by_size[\
+                    stim_size])/float(num_success_by_size[stim_size] + \
+                    num_failure_by_size[stim_size])) - (float(\
+                    num_failure_by_size[stim_size])/float(num_success_by_size[\
+                    stim_size] + num_failure_by_size[stim_size]))
+            except ZeroDivisionError:
+                d_prime_by_size[stim_size] = None
+
+            total_trials_for_size = float(num_success_by_size[stim_size] + \
+                num_ignores_by_size[stim_size] + num_failure_by_size[stim_size])
+
+            try:
+                pct_correct_by_size[stim_size] = (float(num_success_by_size[\
+                    stim_size]))/total_trials_for_size
+            except ZeroDivisionError:
+                pct_correct_by_size[stim_size] = None
+
+            try:
+                pct_failure_by_size[stim_size] = (float(num_failure_by_size[\
+                    stim_size]))/total_trials_for_size
+            except ZeroDivisionError:
+                pct_failure_by_size[stim_size] = None
+
+            try:
+                pct_ignore_by_size[stim_size] = (float(num_ignores_by_size[\
+                    stim_size]))/total_trials_for_size
+            except ZeroDivisionError:
+                pct_ignore_by_size[stim_size] = None
+
+        #finally, add results to the session's results dict
+        session_result["d_prime_by_size"] = d_prime_by_size
+        session_result["pct_correct_by_size"] = pct_correct_by_size
+        session_result["pct_failure_by_size"] = pct_failure_by_size
+        session_result["pct_ignore_by_size"] = pct_ignore_by_size
+
+        all_session_results.append(session_result)
         session_num += 1
-    return result
+    return all_session_results
+
+def addMissingKey(size_dict, key):
+    '''
+    Helper func so you don't have to check whether a key exists before doing
+    math with its values. If a key doesn't exist in one of the by_size dicts,
+    addMissingKey will add the key with value 0 and return the dict.
+    '''
+    if not key in size_dict:
+        size_dict[key] = 0
+        return size_dict
+    return size_dict
 
 def get_session_trials(animal_name, session_filename):
     '''
