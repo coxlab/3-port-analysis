@@ -10,7 +10,7 @@ def get_animals_and_their_session_filenames(path):
         folder names in 'input' folder--each animal should have its own
         folder with .mwk session files) and a list of .mwk filename strings as
         values.
-            e.g. {'V1': ['V1_140501', 'V1_140502']}
+            e.g. {'V1': ['V1_140501.mwk', 'V1_140502.mwk']}
 
     :param path: a string of the directory name containing animals' folders
     '''
@@ -67,42 +67,39 @@ def make_a_figure(data):
     f, ax_arr = plt.subplots(2, 1) #make 2 subplots for figure
     f.suptitle(data["animal_name"]) #set figure title to animal's name
     #f.subplots_adjust(bottom=0.08, hspace=0.4) #fix overlapping labels
+    colors = [
+        "tomato",
+        "turquoise",
+        "violet",
+        "springgreen",
+        "yellow",
+        "seagreen",
+        "teal",
+        "royalblue",
+        "indigo",
+        "sienna",
+        "red",
+        "darkred"
+    ]
 
-    ax_arr[0, 0].plot(data["x_vals"], data["total_pct_correct_y_vals"], "bo")
-    ax_arr[0, 0].set_title("% correct - all trials")
-    ax_arr[0, 0].axis([0, len(data["x_vals"]), 0.0, 100.0])
-    ax_arr[0, 0].set_xlabel("Session number")
+    n = 0
+    x = data["x_vals"]
+    for size in data["all_sizes"]:
+        #plot each size's d prime across sessions
+        y = data["y_vals_d_prime_by_size"][size]
+        ax_arr[0].plot(x, y, color=colors[n], label=size)
+        #plot total number of trials with stim size across sessions
+        y = data["y_vals_total_trials_by_size"][size]
+        ax_arr[1].plot(x, y, color=colors[n], label=size)
 
-    ax_arr[0, 1].plot(data["x_vals"], data["pct_corr_in_center_y_vals"], "bo")
-    ax_arr[0, 1].set_title("% correct - trials with stim in center")
-    ax_arr[0, 1].axis([0, len(data["x_vals"]), 0.0, 100.0])
-    ax_arr[0, 1].set_xlabel("Session number")
+        n += 1
 
-    ax_arr[1, 0].plot(data["x_vals"], data["total_trials_y_vals"], "bo")
-    ax_arr[1, 0].set_title("Total trials in session")
-    ax_arr[1, 0].axis([0, len(data["x_vals"]), 0, \
-        max(data["total_trials_y_vals"])])
-        #largest y axis tick is largest number of trials in a session
-    ax_arr[1, 0].set_xlabel("Session number")
+    ax_arr[0].legend()
+    ax_arr[1].legend()
+    ax_arr[1].set_xlabel("Session number")
+    ax_arr[0].set_ylabel("Discriminability index (d')")
+    ax_arr[1].set_ylabel("Number of trials")
 
-    ax_arr[1, 1].plot(data["x_vals"], data["num_trials_stim_in_center_y_vals"],
-        "bo")
-    ax_arr[1, 1].set_title("Total trials with stim in center of the screen")
-    ax_arr[1, 1].axis([0, len(data["x_vals"]), 0, \
-        max(data["total_trials_y_vals"])])
-        #largest y axis tick is largest number of trials in a session
-        #so it's easier to compare total trials and total trials with
-        #stim in center
-    ax_arr[1, 1].set_xlabel("Session number")
-
-    plt.show() #show each figure, user can save if he/she wants
-
-    #make plot of the % of trials in center
-    plt.close("all")
-    plt.plot(data["x_vals"], data["pct_trials_stim_in_center"], "bo")
-    plt.axis([0, len(data["x_vals"]), 0.0, 100.0])
-    plt.title("% trials with stim in center " + data["animal_name"])
-    plt.xlabel("Session number")
     plt.show()
 
 def get_data_for_figure(animal_name, sessions):
