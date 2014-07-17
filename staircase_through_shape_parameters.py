@@ -52,55 +52,63 @@ def analyze_sessions(animals_and_sessions, graph_as_group=False):
 
     for each in results:
         data_for_animal = each.get() #returns get_data_for_figure result
-        make_a_figure(data_for_animal)
+        tmp = make_a_figure(data_for_animal)
 
     print("Finished")
 
-def make_a_figure(data):
+def make_a_figure(data, colors=["tomato", "turquoise", "violet", "springgreen",\
+    "yellow", "seagreen", "royalblue", "indigo", "sienna", \
+    "slategray", "yellowgreen", "orange", "tan", "red", "darkred", \
+    "green", "orangered", "black"]):
     '''
     Shows a graph of an animal's performance and trial info.
 
     :param data: a dict with x and y value lists returned by
         get_data_for_figure()
     '''
+    plt.close('all')
 
     f, ax_arr = plt.subplots(2, 1) #make 2 subplots for figure
     f.suptitle(data["animal_name"]) #set figure title to animal's name
-    #f.subplots_adjust(bottom=0.08, hspace=0.4) #fix overlapping labels
-    colors = [
-        "tomato",
-        "turquoise",
-        "violet",
-        "springgreen",
-        "yellow",
-        "seagreen",
-        "teal",
-        "royalblue",
-        "indigo",
-        "sienna",
-        "red",
-        "darkred"
-    ]
 
-    n = 0
     x = data["x_vals"]
-    for size in data["all_sizes"]:
-        #plot each size's d prime across sessions
-        y = data["y_vals_d_prime_by_size"][size]
-        ax_arr[0].plot(x, y, color=colors[n], label=size)
-        #plot total number of trials with stim size across sessions
-        y = data["y_vals_total_trials_by_size"][size]
-        ax_arr[1].plot(x, y, color=colors[n], label=size)
+    sizes = sort_by_size_from_size_strings(data["all_sizes"])
+    max_y = 0
 
-        n += 1
+    for i in range(len(sizes)):
+        #plot each size's d prime across sessions
+        y = data["y_vals_d_prime_by_size"][sizes[i]]
+        ax_arr[0].plot(x, y, color=colors[i], label=sizes[i], linewidth=3.0)
+        #plot total number of trials with stim size across sessions
+        y = data["y_vals_total_trials_by_size"][sizes[i]]
+        if max(y) > max_y:
+            max_y = max(y)
+        ax_arr[1].plot(x, y, color=colors[i], label=sizes[i], linewidth=3.0)
 
     ax_arr[0].legend()
     ax_arr[1].legend()
+    ax_arr[0].set_xlim(0, len(x))
+    ax_arr[0].set_ylim(-1.0, 1.0)
+    ax_arr[1].set_xlim(0, len(x))
+    ax_arr[1].set_ylim(0, max_y)
     ax_arr[1].set_xlabel("Session number")
     ax_arr[0].set_ylabel("Discriminability index (d')")
     ax_arr[1].set_ylabel("Number of trials")
 
     plt.show()
+
+def sort_by_size_from_size_strings(list_of_size_strings):
+    '''
+    Returns a descending-order list of size strings from a list of size
+        strings. Use this function so each size always has the same color
+        across animals in make_a_figure()
+
+    :param list_of_size_strings: a list of stimulus size strings where each
+        string can be converted to a float.
+    '''
+    tmp = map(float, list_of_size_strings)
+    tmp.sort(reverse=True)
+    return map(str, tmp)
 
 def get_data_for_figure(animal_name, sessions):
     '''
