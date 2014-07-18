@@ -72,7 +72,7 @@ def make_a_figure(data, colors=["tomato", "turquoise", "violet", "springgreen",\
     f.suptitle(data["animal_name"]) #set figure title to animal's name
 
     x = data["x_vals"]
-    sizes = sort_by_size_from_size_strings(data["all_sizes"])
+    sizes = data["all_sizes"]
     max_y = 0
 
     for i in range(len(sizes)):
@@ -193,6 +193,7 @@ def get_sizes_in_stats_list(list_of_session_stats):
         for size in session_sizes:
             if not size in sizes:
                 sizes.append(size)
+    sizes = sort_by_size_from_size_strings(sizes)
     return sizes
 
 def get_stats_for_each_session(animal_name, sessions):
@@ -372,6 +373,11 @@ def get_stats_for_each_session(animal_name, sessions):
         session_result["pct_correct_by_size"] = pct_correct_by_size
         session_result["pct_failure_by_size"] = pct_failure_by_size
         session_result["pct_ignore_by_size"] = pct_ignore_by_size
+        session_result["num_behavior_outcomes_by_size"] = {
+            "success": num_success_by_size,
+            "failure": num_failure_by_size,
+            "ignore": num_ignores_by_size
+        }
 
         all_session_results.append(session_result)
         session_num += 1
