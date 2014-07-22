@@ -1,6 +1,8 @@
 import os
 import multiprocessing
 import datetime
+import random
+import math
 import pymworks
 import matplotlib.pyplot as plt
 
@@ -178,6 +180,127 @@ def get_data_for_figure(animal_name, sessions):
             "y_vals_total_trials_by_size": y_vals_num_trials,
             "y_vals_d_prime_by_size": y_vals_d_prime,
             "animal_name": animal_name}
+
+def get_bootstrapped_d_prime_and_std_dev(
+    session_stats_list,
+    sessions_per_bin=5):
+    stats_in_bins = split_list_into_sublists(
+        session_stats_list,
+        sessions_per_bin)
+    for bin in stats_in_bins:
+        observed_d_prime, bootstrapped_std_dev = calculate_d_prime(bin)
+        for size, d_prime in observed_d_prime.iteritems():
+        #TODO finish this function and graph the data!
+
+def split_list_into_sublists(session_stats_list, sessions_per_bin):
+    new_list = []
+    while len(session_stats_list) >= sessions_per_bin:
+        new_list.append(session_stats_list[:sessions_per_bin])
+        session_stats_list = session_stats_list[sessions_per_bin:]
+    return new_list
+
+def calculate_d_prime(bin):
+    bin_data = get_bin_data_for_each_stim_size(bin)
+    observed_d_prime_by_size = calc_real_d_prime(bin_data)
+    std_dev_by_size = run_bootstrap_resample(bin_data)
+    return observed_d_prime_by_size, std_dev_by_size
+
+def run_bootstrap_resample(bin_data, iterations=10000):
+    behavior_lists_by_size = make_lists_for_resampling(bin_data)
+    bootstrapped_d_prime_list_by_size = {}
+    for stim_size in behavior_lists_by_size.keys():
+        bootstrapped_d_prime_list_by_size[stim_size] = []
+
+    for i in xrange(iterations):
+        for size, real_outcomes in behavior_lists_by_size.iteritems():
+            successes = 0
+            failures = 0
+            for e in xrange(len(real_outcomes)):
+                chosen = random.choice(real_outcomes)
+                if chosen == "success":
+                    successes += 1
+                elif chosen == "failure":
+                    failures += 1
+                else:
+                    pass
+            total = float(successes + failures)
+            try:
+                bs_d_prime = float(successes)/total - \
+                    float(failures)/total
+            except ZeroDivisionError:
+                bs_d_prime = None
+                "A bootstrapped d prime evaluated to NoneType due to a\
+                    ZeroDivisionError"
+            bootstrapped_d_prime_list_by_size[size].append(bs_d_prime)
+    std_dev_by_size = calc_std_devs(bootstrapped_d_prime_list_by_size)
+    return std_dev_by_size
+
+def calc_std_devs(bootstrapped_d_prime_list_by_size):
+    std_dev_by_size = {}
+    for size, bs_d_primes in bootstrapped_d_prime_list_by_size.iteritems():
+        try:
+            mean = math.fsum(bs_d_primes)/len(bs_d_primes)
+            variance = (math.fsum([(prime - mean)**2.0 \
+                for prime in bs_d_primes]))/(len(bs_d_primes) - 1)
+            std_dev = math.sqrt(variance)
+            std_dev_by_size[size] = std_dev
+        except TypeError: #random samples with no success or failure
+        #this except clause happens when sample size is small and/or
+        #iterations kwarg is very very large
+            std_dev_by_size[size] = None
+    return std_dev_by_size
+
+def make_lists_for_resampling(bin_data):
+    behavior_lists = {}
+    for stim_size in bin_data:
+        behavior_lists[stim_size] = []
+        for each in ["success", "ignore", "failure"]:
+            for i in xrange(bin_data[stim_size][each]):
+                behavior_lists[stim_size].append(each)
+    return behavior_lists
+
+def get_bin_data_for_each_stim_size(bin):
+    bin_data = {}
+    #start success, failure, and ignore totals at 0
+    for session in bin:
+        for stim_size in session["total_trials_by_size"].keys():
+            bin_data[stim_size] = {
+                "success": 0,
+                "failure": 0,
+                "ignore": 0
+            }
+    #now add up behavior events from all sessions in the bin
+    for session in bin:
+        successes_by_size = \
+            session["num_behavior_outcomes_by_size"]["success"]
+        failures_by_size = \
+            session["num_behavior_outcomes_by_size"]["failure"]
+        ignores_by_size = \
+            session["num_behavior_outcomes_by_size"]["ignore"]
+
+        for stim_size in session["total_trials_by_size"].keys():
+            bin_data[stim_size]["success"] += \
+                successes_by_size[stim_size]
+
+            bin_data[stim_size]["failure"] += \
+                failures_by_size[stim_size]
+
+            bin_data[stim_size]["ignore"] += \
+                ignores_by_size[stim_size]
+    return bin_data
+
+def calc_real_d_prime(bin_data):
+    real_d_prime_by_size = {}
+    for stim_size in bin_data:
+        total = float(bin_data[stim_size]["success"] + \
+            bin_data[stim_size]["failure"])
+        try:
+            d_prime = float(bin_data[stim_size]["success"])/total - \
+                float(bin_data[stim_size]["failure"])/total
+        except ZeroDivisionError:
+            d_prime = None
+        real_d_prime_by_size[stim_size] = d_prime
+    return real_d_prime_by_size
 
 def get_sizes_in_stats_list(list_of_session_stats):
     '''
