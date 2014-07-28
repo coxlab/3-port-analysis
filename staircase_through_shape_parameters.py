@@ -152,12 +152,11 @@ def get_data_for_figure(animal_name, sessions):
     '''
 
     list_of_session_stats = get_stats_for_each_session(animal_name, sessions)
+    all_sizes_for_all_sessions = get_sizes_in_stats_list(list_of_session_stats)
     bs = get_bootstrapped_d_prime_and_std_dev(list_of_session_stats)
+    bs = make_lists_for_binned_bootstrap_graph(bs, all_sizes_for_all_sessions)
 
     x_vals = [each["session_number"] for each in list_of_session_stats]
-
-    all_sizes_for_all_sessions = get_sizes_in_stats_list(list_of_session_stats)
-
     y_vals_d_prime = {}
     y_vals_num_trials = {}
     for stim_size in all_sizes_for_all_sessions:
@@ -180,7 +179,8 @@ def get_data_for_figure(animal_name, sessions):
             "all_sizes": all_sizes_for_all_sessions,
             "y_vals_total_trials_by_size": y_vals_num_trials,
             "y_vals_d_prime_by_size": y_vals_d_prime,
-            "animal_name": animal_name}
+            "animal_name": animal_name,
+            "bootstrap_graph_data": bs}
 
 def get_bootstrapped_d_prime_and_std_dev(
     session_stats_list,
@@ -188,21 +188,25 @@ def get_bootstrapped_d_prime_and_std_dev(
     stats_in_bins = split_list_into_sublists(
         session_stats_list,
         sessions_per_bin)
-    result = {}
+    bin_stats = {}
     bins_in_order = []
     low, up = 1, sessions_per_bin
     for bin in stats_in_bins:
         bin_str = str(low) + "-" + str(up)
         observed_d_prime, bootstrapped_std_dev = calculate_d_prime(bin)
-        result[bin_str] = {
+        bin_stats[bin_str] = {
             "observed_d_prime": observed_d_prime,
             "bootstrapped_std_dev": bootstrapped_std_dev
         }
         bins_in_order.append(bin_str)
         low, up = up + 1, up + sessions_per_bin
-    result["bins_in_order"] = bins_in_order
-    return result
+    bin_stats["bins_in_order"] = bins_in_order
+    return bin_stats
 
+def make_lists_for_binned_bootstrap_graph(bin_stats, all_sizes):
+    result = {"bins_in_order": bin_stats["bins_in_order"]}
+    for stim_size in all_sizes:
+        if not stim_size in bin_stats[]
 
 def split_list_into_sublists(session_stats_list, sessions_per_bin):
     new_list = []
