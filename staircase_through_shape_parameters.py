@@ -152,6 +152,7 @@ def get_data_for_figure(animal_name, sessions):
     '''
 
     list_of_session_stats = get_stats_for_each_session(animal_name, sessions)
+    bs = get_bootstrapped_d_prime_and_std_dev(list_of_session_stats)
 
     x_vals = [each["session_number"] for each in list_of_session_stats]
 
@@ -187,10 +188,21 @@ def get_bootstrapped_d_prime_and_std_dev(
     stats_in_bins = split_list_into_sublists(
         session_stats_list,
         sessions_per_bin)
+    result = {}
+    bins_in_order = []
+    low, up = 1, sessions_per_bin
     for bin in stats_in_bins:
+        bin_str = str(low) + "-" + str(up)
         observed_d_prime, bootstrapped_std_dev = calculate_d_prime(bin)
-        for size, d_prime in observed_d_prime.iteritems():
-        #TODO finish this function and graph the data!
+        result[bin_str] = {
+            "observed_d_prime": observed_d_prime,
+            "bootstrapped_std_dev": bootstrapped_std_dev
+        }
+        bins_in_order.append(bin_str)
+        low, up = up + 1, up + sessions_per_bin
+    result["bins_in_order"] = bins_in_order
+    return result
+
 
 def split_list_into_sublists(session_stats_list, sessions_per_bin):
     new_list = []
