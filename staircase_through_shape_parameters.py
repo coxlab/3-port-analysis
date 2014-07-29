@@ -153,7 +153,8 @@ def get_data_for_figure(animal_name, sessions):
 
     list_of_session_stats = get_stats_for_each_session(animal_name, sessions)
     all_sizes_for_all_sessions = get_sizes_in_stats_list(list_of_session_stats)
-    bs = get_bootstrapped_d_prime_and_std_dev(list_of_session_stats)
+    bs, bins_in_order = \
+        get_bootstrapped_d_prime_and_std_dev(list_of_session_stats)
     bs = make_lists_for_binned_bootstrap_graph(bs, all_sizes_for_all_sessions)
 
     x_vals = [each["session_number"] for each in list_of_session_stats]
@@ -175,12 +176,15 @@ def get_data_for_figure(animal_name, sessions):
             else:
                 y_vals_num_trials[stim_size].append(0)
 
-    return {"x_vals": x_vals, #x axis will be session number for all graphs
-            "all_sizes": all_sizes_for_all_sessions,
-            "y_vals_total_trials_by_size": y_vals_num_trials,
-            "y_vals_d_prime_by_size": y_vals_d_prime,
-            "animal_name": animal_name,
-            "bootstrap_graph_data": bs}
+    return {
+        "x_vals": x_vals, #x axis will be session number for all graphs
+        "all_sizes": all_sizes_for_all_sessions,
+        "y_vals_total_trials_by_size": y_vals_num_trials,
+        "y_vals_d_prime_by_size": y_vals_d_prime,
+        "animal_name": animal_name,
+        "bootstrap_graph_data": bs,
+        "bootstrap_bins_in_order": bins_in_order
+    }
 
 def get_bootstrapped_d_prime_and_std_dev(
     session_stats_list,
@@ -200,13 +204,57 @@ def get_bootstrapped_d_prime_and_std_dev(
         }
         bins_in_order.append(bin_str)
         low, up = up + 1, up + sessions_per_bin
-    bin_stats["bins_in_order"] = bins_in_order
-    return bin_stats
+    return bin_stats, bins_in_order
 
 def make_lists_for_binned_bootstrap_graph(bin_stats, all_sizes):
-    result = {"bins_in_order": bin_stats["bins_in_order"]}
-    for stim_size in all_sizes:
-        if not stim_size in bin_stats[]
+    result = {}
+    for bin in bin_stats:
+        result[bin] = {
+            "x_vals": all_sizes,
+            "observed_d_primes": [],
+            "y_vals_bs_std_dev": []
+        }
+        for size in all_sizes:
+            try:
+                result[bin]["observed_d_primes"].append\
+                    (bin_stats[bin]["observed_d_prime"][size])
+            except KeyError:
+                result[bin]["observed_d_primes"].append(None)
+            try:
+                result[bin]["y_vals_bs_std_dev"].append\
+                    (bin_stats[bin]["bootstrapped_std_dev"][size])
+            except KeyError:
+                result[bin]["y_vals_bs_std_dev"].append(None)
+    result = removeNoneTypes(result)
+    return result
+
+def removeNoneTypes(result):
+    for bin in result:
+        while not (all(result[bin]["x_vals"])\
+            and all(result[bin]["observed_d_primes"])\
+            and all(result[bin]["y_vals_bs_std_dev"])):
+            try:
+                i = result[bin]["x_vals"].index(None)
+                tmp = result[bin]["x_vals"].pop(i)
+                tmp = result[bin]["observed_d_primes"].pop(i)
+                tmp = result[bin]["y_vals_bs_std_dev"].pop(i)
+            except ValueError:
+                pass
+            try:
+                i = result[bin]["observed_d_primes"].index(None)
+                tmp = result[bin]["observed_d_primes"].pop(i)
+                tmp = result[bin]["x_vals"].pop(i)
+                tmp = result[bin]["y_vals_bs_std_dev"].pop(i)
+            except ValueError:
+                pass
+            try:
+                i = result[bin]["y_vals_bs_std_dev"].index(None)
+                tmp = result[bin]["y_vals_bs_std_dev"].pop(i)
+                tmp = result[bin]["x_vals"].pop(i)
+                tmp = result[bin]["observed_d_primes"].pop(i)
+            except ValueError:
+                pass
+    return result
 
 def split_list_into_sublists(session_stats_list, sessions_per_bin):
     new_list = []
@@ -245,8 +293,7 @@ def run_bootstrap_resample(bin_data, iterations=10000):
                     float(failures)/total
             except ZeroDivisionError:
                 bs_d_prime = None
-                "A bootstrapped d prime evaluated to NoneType due to a\
-                    ZeroDivisionError"
+
             bootstrapped_d_prime_list_by_size[size].append(bs_d_prime)
     std_dev_by_size = calc_std_devs(bootstrapped_d_prime_list_by_size)
     return std_dev_by_size
