@@ -98,6 +98,9 @@ def make_a_figure(data, colors=["tomato", "turquoise", "violet", "springgreen",\
     ax_arr[1].set_ylabel("Number of trials")
 
     plt.show()
+    plt.close('all')
+
+
 
 def sort_by_size_from_size_strings(list_of_size_strings):
     '''
@@ -230,9 +233,9 @@ def make_lists_for_binned_bootstrap_graph(bin_stats, all_sizes):
 
 def removeNoneTypes(result):
     for bin in result:
-        while not (all(result[bin]["x_vals"])\
-            and all(result[bin]["observed_d_primes"])\
-            and all(result[bin]["y_vals_bs_std_dev"])):
+        while ((None in result[bin]["x_vals"])\
+            or (None in result[bin]["observed_d_primes"])\
+            or (None in result[bin]["y_vals_bs_std_dev"])):
             try:
                 i = result[bin]["x_vals"].index(None)
                 tmp = result[bin]["x_vals"].pop(i)
