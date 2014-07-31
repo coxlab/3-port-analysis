@@ -103,7 +103,7 @@ def make_a_figure(data, colors=["tomato", "turquoise", "violet", "springgreen",\
         x = bs_data[bin]["x_vals"]
         y = bs_data[bin]["observed_d_primes"]
         error = bs_data[bin]["y_vals_bs_std_dev"]
-        plt.errorbar(x, y, yerr=error, fmt="-o", color=color, \
+        plt.errorbar(x, y, yerr=error, fmt="-o", color=color,
             label=bin, linewidth=2.0)
     plt.xlim(0.0, 45.0)
     plt.ylim(-1.0, 1.0)
@@ -112,6 +112,28 @@ def make_a_figure(data, colors=["tomato", "turquoise", "violet", "springgreen",\
     plt.title(data["animal_name"] + " binned performance\
     (bootstrapped std_dev)")
     plt.legend(loc="lower right", title="Sessions")
+
+    plt.show()
+    plt.close('all')
+
+    bs_pct_correct_data = data["pct_correct_bootstraph_graph_data"]
+    session_bins_in_order = data["bootstrap_ordered_bins"]
+    for i in range(len(session_bins_in_order)):
+        bin = session_bins_in_order[i]
+        color = colors[i]
+        x = bs_pct_correct_data[bin]["x_vals"]
+        y = bs_pct_correct_data[bin]["y_vals_observed_pct_correct"]
+        error = bs_pct_correct_data[bin]["err_vals_bs_std_devs"]
+        plt.errorbar(x, y, yerr=error, fmt='-o', color=color,
+            label=bin, linewidth=2.0)
+    plt.xlim(0.0, 45.0)
+    plt.ylim(0.0, 100.0)
+    plt.xlabel("Stimulus size (degrees visual angle)")
+    plt.ylabel("Percent correct +/- std_dev")
+    plt.title(data["animal_name"] + " binned performance with bootstrapped\
+    std_dev")
+    plt.legend(loc="lower right", title="Sessions")
+
     plt.show()
 
 def sort_by_size_from_size_strings(list_of_size_strings):
