@@ -26,9 +26,6 @@ def get_animals_and_their_session_filenames(path):
         for filename in files_list:
             if not filename.startswith('.'): #dont want hidden files
                 result[animal_name].append(filename)
-    print("Starting analysis for animals:")
-    for each in result.keys():
-        print(each)
     return result
 
 def analyze_sessions(animals_and_sessions, graph_as_group=False):
@@ -55,8 +52,6 @@ def analyze_sessions(animals_and_sessions, graph_as_group=False):
     for each in results:
         data_for_animal = each.get() #returns get_data_for_figure result
         tmp = make_a_figure(data_for_animal)
-
-    print("Finished")
 
 def make_a_figure(data, colors=["tomato", "turquoise", "violet", "springgreen",\
     "yellow", "seagreen", "royalblue", "indigo", "sienna", \
@@ -100,7 +95,21 @@ def make_a_figure(data, colors=["tomato", "turquoise", "violet", "springgreen",\
     plt.show()
     plt.close('all')
 
+    bs_data = data["bootstrap_graph_data"]
+    session_bins_in_order = data["bootstrap_bins_in_order"]
+    for i in range(len(session_bins_in_order)):
+        bin = session_bins_in_order[i]
+        color = colors[i]
+        x = bs_data[bin]["x_vals"]
+        y = bs_data[bin]["observed_d_primes"]
+        error = bs_data[bin]["y_vals_bs_std_dev"]
+        plt.errorbar(x, y, yerr=error, fmt="-o", color=color, \
+            label=bin, linewidth=2.0)
+    plt.xlabel("Stimulus size (degrees vis. angle)")
+    plt.ylabel("Discriminability index (d') +/- std_dev")
+    plt.title(data["animal_name"] + " performance by session bins")
 
+    plt.show()
 
 def sort_by_size_from_size_strings(list_of_size_strings):
     '''
@@ -178,6 +187,7 @@ def get_data_for_figure(animal_name, sessions):
                     "total_trials_by_size"][stim_size])
             else:
                 y_vals_num_trials[stim_size].append(0)
+    print "Finished analysis for " + animal_name
 
     return {
         "x_vals": x_vals, #x axis will be session number for all graphs
@@ -228,36 +238,30 @@ def make_lists_for_binned_bootstrap_graph(bin_stats, all_sizes):
                     (bin_stats[bin]["bootstrapped_std_dev"][size])
             except KeyError:
                 result[bin]["y_vals_bs_std_dev"].append(None)
+
     result = removeNoneTypes(result)
     return result
 
 def removeNoneTypes(result):
-    for bin in result:
-        while ((None in result[bin]["x_vals"])\
-            or (None in result[bin]["observed_d_primes"])\
-            or (None in result[bin]["y_vals_bs_std_dev"])):
-            try:
-                i = result[bin]["x_vals"].index(None)
-                tmp = result[bin]["x_vals"].pop(i)
-                tmp = result[bin]["observed_d_primes"].pop(i)
-                tmp = result[bin]["y_vals_bs_std_dev"].pop(i)
-            except ValueError:
-                pass
-            try:
-                i = result[bin]["observed_d_primes"].index(None)
-                tmp = result[bin]["observed_d_primes"].pop(i)
-                tmp = result[bin]["x_vals"].pop(i)
-                tmp = result[bin]["y_vals_bs_std_dev"].pop(i)
-            except ValueError:
-                pass
-            try:
-                i = result[bin]["y_vals_bs_std_dev"].index(None)
-                tmp = result[bin]["y_vals_bs_std_dev"].pop(i)
-                tmp = result[bin]["x_vals"].pop(i)
-                tmp = result[bin]["observed_d_primes"].pop(i)
-            except ValueError:
-                pass
-    return result
+    final_result = {}
+    for bin, stats in result.iteritems():
+        x = stats["x_vals"]
+        y = stats["observed_d_primes"]
+        err = stats["y_vals_bs_std_dev"]
+
+        new_x, new_y, new_err = [], [], []
+        for x, y, err in zip(x, y, err):
+            if ((x is not None) and (y is not None) and (err is not None)):
+                new_x.append(x)
+                new_y.append(y)
+                new_err.append(err)
+
+        final_result[bin] = {
+            "x_vals": new_x,
+            "observed_d_primes": new_y,
+            "y_vals_bs_std_dev": new_err
+        }
+    return final_result
 
 def split_list_into_sublists(session_stats_list, sessions_per_bin):
     new_list = []
@@ -448,6 +452,7 @@ def get_stats_for_each_session(animal_name, sessions):
         are left with value = 0.
     '''
     #TODO break this down into more functions...it's a bit difficult to read
+    print "Starting analysis for " + animal_name
     all_session_results = []
     session_num = 1
     for session in sessions:
