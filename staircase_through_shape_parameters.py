@@ -105,10 +105,13 @@ def make_a_figure(data, colors=["tomato", "turquoise", "violet", "springgreen",\
         error = bs_data[bin]["y_vals_bs_std_dev"]
         plt.errorbar(x, y, yerr=error, fmt="-o", color=color, \
             label=bin, linewidth=2.0)
-    plt.xlabel("Stimulus size (degrees vis. angle)")
+    plt.xlim(0.0, 45.0)
+    plt.ylim(-1.0, 1.0)
+    plt.xlabel("Stimulus size (degrees visual angle)")
     plt.ylabel("Discriminability index (d') +/- std_dev")
-    plt.title(data["animal_name"] + " performance by session bins")
-
+    plt.title(data["animal_name"] + " binned performance\
+    (bootstrapped std_dev)")
+    plt.legend(loc="lower right", title="Sessions")
     plt.show()
 
 def sort_by_size_from_size_strings(list_of_size_strings):
