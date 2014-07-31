@@ -172,6 +172,12 @@ def get_data_for_figure(animal_name, sessions):
         get_bootstrapped_d_prime_and_std_dev(list_of_session_stats)
     bs = make_lists_for_binned_bootstrap_graph(bs, all_sizes_for_all_sessions)
 
+    bs_pct_correct, ordered_bins = \
+        get_bootstrapped_pct_correct_and_std_dev(list_of_session_stats)
+    bs_pct_correct = \
+        make_lists_for_binned_bootstrap_pct_correct_graph(bs_pct_correct,
+            all_sizes_for_all_sessions)
+
     x_vals = [each["session_number"] for each in list_of_session_stats]
     y_vals_d_prime = {}
     y_vals_num_trials = {}
@@ -199,8 +205,119 @@ def get_data_for_figure(animal_name, sessions):
         "y_vals_d_prime_by_size": y_vals_d_prime,
         "animal_name": animal_name,
         "bootstrap_graph_data": bs,
-        "bootstrap_bins_in_order": bins_in_order
+        "bootstrap_bins_in_order": bins_in_order,
+        "bootstrap_ordered_bins": ordered_bins, #dont really need this...
+        "pct_correct_bootstraph_graph_data": bs_pct_correct
     }
+
+def get_bootstrapped_pct_correct_and_std_dev(
+    session_stats_list,
+    sessions_per_bin=5):
+    stats_in_bins = split_list_into_sublists(
+        session_stats_list,
+        sessions_per_bin)
+    bin_stats = {}
+    bins_in_order = []
+    low, up = 1, sessions_per_bin
+    for bin in stats_in_bins:
+        bin_str = str(low) + "-" + str(up)
+        observed_pct_correct, bootstrapped_std_dev = calc_pct_correct(bin)
+        bin_stats[bin_str] = {
+            "observed_pct_correct": observed_pct_correct,
+            "bootstrapped_pct_correct_std_dev": bootstrapped_std_dev
+        }
+        bins_in_order.append(bin_str)
+        low, up = up + 1, up + sessions_per_bin
+    return bin_stats, bins_in_order
+
+def make_lists_for_binned_bootstrap_pct_correct_graph(bin_stats, all_sizes):
+    result = {}
+    for bin in bin_stats:
+        result[bin] = {
+            "x_vals": all_sizes,
+            "y_vals_observed_pct_correct": [],
+            "err_vals_bs_std_devs": []
+        }
+        for size in all_sizes:
+            try:
+                result[bin]["y_vals_observed_pct_correct"].append\
+                (bin_stats[bin]["observed_pct_correct"][size])
+            except KeyError:
+                result[bin]["y_vals_observed_pct_correct"].append(None)
+            try:
+                result[bin]["err_vals_bs_std_devs"].append\
+                (bin_stats[bin]["bootstrapped_pct_correct_std_dev"][size])
+            except KeyError:
+                result[bin]["err_vals_bs_std_devs"].append(None)
+    result = removeNoneTypesPctCorrect(result)
+    return result
+
+def removeNoneTypesPctCorrect(result):
+    final_result = {}
+    for bin, stats in result.iteritems():
+        x = stats["x_vals"]
+        y = stats["y_vals_observed_pct_correct"]
+        err = stats["err_vals_bs_std_devs"]
+
+        new_x, new_y, new_err = [], [], []
+        for x, y, err in zip(x, y, err):
+            if ((x is not None) and (y is not None) and (err is not None)):
+                new_x.append(x)
+                new_y.append(y)
+                new_err.append(err)
+
+        final_result[bin] = {
+            "x_vals": new_x,
+            "y_vals_observed_pct_correct": new_y,
+            "err_vals_bs_std_devs": new_err
+        }
+    return final_result
+
+def calc_pct_correct(bin):
+    bin_data = get_bin_data_for_each_stim_size(bin)
+    observed_pct_correct_by_size = calc_real_pct_correct(bin_data)
+    std_dev_by_size = run_bootstrap_resample_pct_correct(bin_data)
+    return observed_pct_correct_by_size, std_dev_by_size
+
+def calc_real_pct_correct(bin_data):
+    real_pct_correct_by_size = {}
+    for stim_size in bin_data:
+        total = float(bin_data[stim_size]["success"] + \
+            bin_data[stim_size]["failure"] + bin_data[stim_size]["ignore"])
+        try:
+            pct_correct = (float(bin_data[stim_size]["success"])/total) * 100.0
+        except ZeroDivisionError:
+            pct_correct = None
+        real_pct_correct_by_size[stim_size] = pct_correct
+    return real_pct_correct_by_size
+
+def run_bootstrap_resample_pct_correct(bin_data, iterations=10000):
+    behavior_lists_by_size = make_lists_for_resampling(bin_data)
+    bootstrapped_pct_correct_list_by_size = {}
+    for stim_size in behavior_lists_by_size.keys():
+        bootstrapped_pct_correct_list_by_size[stim_size] = []
+
+    for i in xrange(iterations):
+        for size, real_outcomes in behavior_lists_by_size.iteritems():
+            successes, failures, ignores = 0, 0, 0
+            for e in xrange(len(real_outcomes)):
+                chosen = random.choice(real_outcomes)
+                if chosen == "success":
+                    successes += 1
+                elif chosen == "failure":
+                    failures += 1
+                elif chosen == "ignore":
+                    ignores += 1
+                else:
+                    print "wut"
+            total = float(successes + failures + ignores)
+            try:
+                bs_pct_correct = (float(successes)/total) * 100.0
+            except ZeroDivisionError:
+                bs_pct_correct = None
+            bootstrapped_pct_correct_list_by_size[size].append(bs_pct_correct)
+    std_dev_by_size = calc_std_devs(bootstrapped_pct_correct_list_by_size)
+    return std_dev_by_size
 
 def get_bootstrapped_d_prime_and_std_dev(
     session_stats_list,
