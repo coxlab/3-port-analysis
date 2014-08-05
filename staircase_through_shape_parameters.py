@@ -750,42 +750,34 @@ def get_session_trials(animal_name, session_filename):
     path = 'input/' + animal_name + '/' + session_filename
 
     df = pymworks.open_file(path)
-    events = df.get_events(["success", "failure", "ignore", "stm_size"])
+    events = df.get_events([
+        "Announce_TrialStart",
+        "Announce_TrialEnd",
+        "success",
+        "failure",
+        "ignore",
+        "stm_size"]
+    )
 
     trials = []
-    index = 0
     trial_num = 1
-    while index < len(events):
-        if events[index].name != "stm_size" and events[index].value == 1:
-            #only do try statement if event name is success, failure, or ignore
-            try:
-                if events[index + 1].name == "stm_size":
-                    #only enter this try statement if success, failure, or
-                    #ignore is followed by a stm_size
-                    try:
-                        #dont add if there's another stm_size after first
-                        #stm_size
-                        if events[index + 2].name != "stm_size":
-                            trial = {
-                                "trial_num": trial_num,
-                                "behavior_outcome": events[index].name,
-                                "stm_size": events[index + 1].value
-                            }
-                            trials.append(trial)
-                            trial_num += 1
-                    except IndexError:
-                        #add to results list if final event is a stm_size
-                        trial = {
-                            "trial_num": trial_num,
-                            "behavior_outcome": events[index].name,
-                            "stm_size": events[index + 1].value
-                        }
-                        trials.append(trial)
-
-            except IndexError:
-                print "Last event was a behavior_outcome with no size data..."
-        index += 1
-
+    for index, event in enumerate(events):
+        if (event.name == "Announce_TrialStart" and
+        event.value == 1):
+            trial = {
+                "trial_num": trial_num,
+                "stm_size": None,
+                "behavior_outcome": None
+            }
+            size = None
+            if events[index - 1].name == "stm_size":
+                trial["stm_size"] = events[index - 1].value
+            if events[index + 1].name in ["success", "failure", "ignore"]:
+                trial["behavior_outcome"] = events[index + 1].name
+            if (trial["stm_size"] is not None and
+            trial["behavior_outcome"] is not None):
+                trials.append(trial)
+                trial_num += 1
     return trials
 
 if __name__ == "__main__":
