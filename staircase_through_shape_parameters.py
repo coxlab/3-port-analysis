@@ -234,7 +234,7 @@ def get_data_for_figure(animal_name, sessions):
 
 def get_bootstrapped_pct_correct_and_std_dev(
     session_stats_list,
-    sessions_per_bin=5):
+    sessions_per_bin=10):
     stats_in_bins = split_list_into_sublists(
         session_stats_list,
         sessions_per_bin)
@@ -343,7 +343,7 @@ def run_bootstrap_resample_pct_correct(bin_data, iterations=10000):
 
 def get_bootstrapped_d_prime_and_std_dev(
     session_stats_list,
-    sessions_per_bin=5):
+    sessions_per_bin=10):
     stats_in_bins = split_list_into_sublists(
         session_stats_list,
         sessions_per_bin)
@@ -770,10 +770,18 @@ def get_session_trials(animal_name, session_filename):
                 "behavior_outcome": None
             }
             size = None
-            if events[index - 1].name == "stm_size":
-                trial["stm_size"] = events[index - 1].value
-            if events[index + 1].name in ["success", "failure", "ignore"]:
-                trial["behavior_outcome"] = events[index + 1].name
+            try:
+                if events[index - 1].name == "stm_size":
+                    trial["stm_size"] = events[index - 1].value
+            except IndexError:
+                print "stm_size out of range for session", session_filename, \
+                index
+            try:
+                if events[index + 1].name in ["success", "failure", "ignore"]:
+                    trial["behavior_outcome"] = events[index + 1].name
+            except IndexError:
+                print "beh_outcome out of range for session", session_filename,\
+                 index
             if (trial["stm_size"] is not None and
             trial["behavior_outcome"] is not None):
                 trials.append(trial)
