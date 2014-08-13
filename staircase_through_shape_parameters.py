@@ -769,7 +769,7 @@ def get_session_trials(animal_name, session_filename):
                 "stm_size": None,
                 "behavior_outcome": None
             }
-            size = None
+
             try:
                 if events[index - 1].name == "stm_size":
                     trial["stm_size"] = events[index - 1].value
