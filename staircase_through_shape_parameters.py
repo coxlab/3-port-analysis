@@ -218,6 +218,11 @@ def get_data_for_figure(animal_name, sessions):
                     "total_trials_by_size"][stim_size])
             else:
                 y_vals_num_trials[stim_size].append(0)
+
+    binned_graph_trial_nums = get_trial_nums_for_binned_graph(
+        y_vals_num_trials,
+        bins_in_order)
+
     print "Finished analysis for " + animal_name
 
     return {
@@ -229,8 +234,38 @@ def get_data_for_figure(animal_name, sessions):
         "bootstrap_graph_data": bs,
         "bootstrap_bins_in_order": bins_in_order,
         "bootstrap_ordered_bins": ordered_bins, #dont really need this...
-        "pct_correct_bootstraph_graph_data": bs_pct_correct
+        "pct_correct_bootstraph_graph_data": bs_pct_correct,
+        "binned_graph_trial_nums": binned_graph_trial_nums
     }
+
+def get_trial_nums_for_binned_graph(
+    y_vals_total_trials_by_size,
+    bins_in_order,
+    sessions_per_bin=10):
+    '''
+    returns dict like this:
+    {
+        "1-10": {
+            "x_vals_sizes": [40.0, 35.0, 37.0, 15.0, 20.0, etc],
+            "y_vals_total_trials": [...]
+        }
+        "11-20": etc etc
+    }
+    '''
+    result = {}
+    lower, upper = 0, sessions_per_bin
+    for bin in bins_in_order:
+        result[bin] = {
+            "x_vals_sizes": [],
+            "y_vals_total_trials": []
+        }
+        for size, list_of_trials in y_vals_total_trials_by_size.iteritems():
+            result[bin]["x_vals_sizes"].append(size)
+            total_trials_for_size = sum(list_of_trials[lower:upper])
+            result[bin]["y_vals_total_trials"].append(total_trials_for_size)
+
+        lower, upper = upper, upper + sessions_per_bin
+    return result
 
 def get_bootstrapped_pct_correct_and_std_dev(
     session_stats_list,
