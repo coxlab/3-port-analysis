@@ -135,6 +135,24 @@ def make_a_figure(data, colors=["tomato", "turquoise", "violet", "springgreen",\
     plt.legend(loc="lower right", title="Sessions")
 
     plt.show()
+    plt.close('all')
+
+    num_trials_data = data["binned_graph_trial_nums"]
+    session_bins_in_order = data["bootstrap_ordered_bins"]
+    for i in range(len(session_bins_in_order)):
+        bin = session_bins_in_order[i]
+        color = colors[i]
+        x = num_trials_data[bin]["x_vals_sizes"]
+        y = num_trials_data[bin]["y_vals_total_trials"]
+        plt.plot(x, y, "-o", color=color, label=bin, linewidth=2.0)
+    plt.xlim(0.0, 45.0)
+    #plt.ylim(0.0, ) will make ylim same for all animals
+    plt.xlabel("Stimulus size (degrees visual angle)")
+    plt.ylabel("Sample size (total trials)")
+    plt.title(data["animal_name"] + " sample size for all stimuli")
+    plt.legend(loc="upper right", title="Sessions")
+
+    plt.show()
 
 def sort_by_size_from_size_strings(list_of_size_strings):
     '''
@@ -260,12 +278,33 @@ def get_trial_nums_for_binned_graph(
             "y_vals_total_trials": []
         }
         for size, list_of_trials in y_vals_total_trials_by_size.iteritems():
-            result[bin]["x_vals_sizes"].append(size)
+            result[bin]["x_vals_sizes"].append(float(size))
             total_trials_for_size = sum(list_of_trials[lower:upper])
             result[bin]["y_vals_total_trials"].append(total_trials_for_size)
 
         lower, upper = upper, upper + sessions_per_bin
+    #data added to result but not in order yet
+    #x, y vals have to be sorted for matplotlib
+    for bin in bins_in_order:
+        result[bin]["x_vals_sizes"], result[bin]["y_vals_total_trials"] = \
+            sort_x_y_pairs_by_x_val(
+                result[bin]["x_vals_sizes"],
+                result[bin]["y_vals_total_trials"]
+            )
     return result
+
+def sort_x_y_pairs_by_x_val(x_vals_list, y_vals_list):
+    '''
+    x_vals_list should be either ints or floats
+    '''
+    xy = zip(x_vals_list, y_vals_list)
+    xy.sort()
+    new_x = []
+    new_y = []
+    for x, y in xy:
+        new_x.append(x)
+        new_y.append(y)
+    return new_x, new_y
 
 def get_bootstrapped_pct_correct_and_std_dev(
     session_stats_list,
