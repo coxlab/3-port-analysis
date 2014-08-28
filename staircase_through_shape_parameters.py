@@ -98,6 +98,7 @@ def make_summary_stats_figure(data, bins_in_order, colors=[
 
     plt.xlim(0.0, 45.0)
     plt.ylim(0.0, 100.0)
+    plt.grid(axis="y")
     plt.xlabel("Stimulus size (degrees visual angle)")
     plt.ylabel("Percent correct +/- std_dev")
     plt.title("All animals percent correct")
@@ -392,7 +393,7 @@ def get_data_for_figure(animal_name, sessions):
 def get_trial_nums_for_binned_graph(
     y_vals_total_trials_by_size,
     bins_in_order,
-    sessions_per_bin=10):
+    sessions_per_bin=8):
     '''
     returns dict like this:
     {
@@ -441,7 +442,7 @@ def sort_x_y_pairs_by_x_val(x_vals_list, y_vals_list):
 
 def get_bootstrapped_pct_correct_and_std_dev(
     session_stats_list,
-    sessions_per_bin=10):
+    sessions_per_bin=8):
     stats_in_bins = split_list_into_sublists(
         session_stats_list,
         sessions_per_bin)
@@ -550,7 +551,7 @@ def run_bootstrap_resample_pct_correct(bin_data, iterations=10000):
 
 def get_bootstrapped_d_prime_and_std_dev(
     session_stats_list,
-    sessions_per_bin=10):
+    sessions_per_bin=8):
     stats_in_bins = split_list_into_sublists(
         session_stats_list,
         sessions_per_bin)
