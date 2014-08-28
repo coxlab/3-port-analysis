@@ -28,7 +28,7 @@ def get_animals_and_their_session_filenames(path):
                 result[animal_name].append(filename)
     return result
 
-def analyze_sessions(animals_and_sessions, graph_as_group=False):
+def analyze_sessions(animals_and_sessions, graph_summary_stats=False):
     '''
     Starts analysis for each animals' sessions in a new process to use cores.
         We don't want to wait all day for this, y'all.
@@ -46,12 +46,145 @@ def analyze_sessions(animals_and_sessions, graph_as_group=False):
         results.append(result)
     pool.close()
     pool.join() #block until all the data has been processed
-    if graph_as_group:
-        raise NotImplementedError, "Group graphing coming soon..."
 
+    all_data = []
     for each in results:
         data_for_animal = each.get() #returns get_data_for_figure result
+        all_data.append(data_for_animal)
         tmp = make_a_figure(data_for_animal)
+
+    if graph_summary_stats:
+        data, bins_in_order = get_data_for_summary_statistics_graph(all_data)
+        make_summary_stats_figure(data, bins_in_order)
+
+def make_summary_stats_figure(data, bins_in_order, colors=[
+        "tomato",
+        "turquoise",
+        "violet",
+        "springgreen",
+        "yellow",
+        "seagreen",
+        "royalblue",
+        "indigo",
+        "sienna",
+        "slategray",
+        "yellowgreen",
+        "orange",
+        "tan",
+        "red",
+        "darkred",
+        "green",
+        "orangered",
+        "black"
+    ]):
+
+    plt.close('all')
+
+    for i in range(len(bins_in_order)):
+        bin = bins_in_order[i]
+        color = colors[i]
+        x = data[bin]["x_vals_sizes"]
+        y = data[bin]["y_vals_pct_correct"]
+        err = data[bin]["y_vals_error"]
+        plt.errorbar(
+            x,
+            y,
+            yerr=err,
+            fmt='-o',
+            color=color,
+            label=bin,
+            linewidth=2.0
+        )
+
+    plt.xlim(0.0, 45.0)
+    plt.ylim(0.0, 100.0)
+    plt.xlabel("Stimulus size (degrees visual angle)")
+    plt.ylabel("Percent correct +/- std_dev")
+    plt.title("All animals percent correct")
+    plt.legend(loc="lower right", title="Sessions")
+
+    plt.show()
+
+def get_data_for_summary_statistics_graph(animal_data_list):
+    all_bins = get_bins_in_common_for_all_animals(animal_data_list)
+    all_sizes = get_sizes_in_common_for_all_animals(animal_data_list, all_bins)
+
+    #setup summary dict with a list for all sizes in all bins
+    summary = {}
+    for bin in all_bins:
+        summary[bin] = {}
+        for size in all_sizes[bin]:
+            summary[bin][size] = []
+
+    for bin in all_bins:
+        for animal_stats in animal_data_list:
+            pct_correct_data = animal_stats["pct_correct_bootstraph_graph_data"]
+            sizes = pct_correct_data[bin]["x_vals"]
+            pct_corrects = pct_correct_data[bin]["y_vals_observed_pct_correct"]
+            for size, pct in zip(sizes, pct_corrects):
+                if size in all_sizes[bin]:
+                    summary[bin][size].append(pct)
+
+    summary = do_stats_for_summary(summary)
+    return summary, all_bins
+
+def do_stats_for_summary(summary_stats):
+    result = {}
+    for bin, size_data_list in summary_stats.iteritems():
+        result[bin] = {
+            "x_vals_sizes": [],
+            "y_vals_pct_correct": [],
+            "y_vals_error": []
+        }
+        for size, pct_correct_list in size_data_list.iteritems():
+            avg, std_dev = calc_summary_stats(pct_correct_list)
+            result[bin]["x_vals_sizes"].append(float(size))
+            result[bin]["y_vals_pct_correct"].append(avg)
+            result[bin]["y_vals_error"].append(std_dev)
+
+    result = sort_summary_stats_into_lists(result)
+    return result
+
+def sort_summary_stats_into_lists(result):
+    final_result = {}
+    for bin, data_lists in result.iteritems():
+        x = data_lists["x_vals_sizes"]
+        y = data_lists["y_vals_pct_correct"]
+        z = data_lists["y_vals_error"]
+        xyz = zip(x, y, z)
+        xyz.sort()
+        x, y, z = zip(*xyz)
+        final_result[bin] = {
+            "x_vals_sizes": x,
+            "y_vals_pct_correct": y,
+            "y_vals_error": z
+        }
+    return final_result
+
+def calc_summary_stats(list_of_floats):
+    mean = math.fsum(list_of_floats)/len(list_of_floats)
+    variance = (math.fsum([(fl - mean)**2.0 for fl in list_of_floats]))/(len(list_of_floats) - 1)
+    std_dev = math.sqrt(variance)
+    return mean, std_dev
+
+def get_bins_in_common_for_all_animals(animal_data_list):
+    all_bins = []
+    for animal in animal_data_list:
+        bins_in_order = animal["bootstrap_bins_in_order"]
+        all_bins.append(bins_in_order)
+    fewest_bins = sorted(all_bins, key=len)[0]
+    return fewest_bins
+
+def get_sizes_in_common_for_all_animals(animal_data_list, all_bins):
+    result = {}
+    for bin in all_bins:
+        all_sizes = []
+        for animal in animal_data_list:
+            sizes = animal["pct_correct_bootstraph_graph_data"][bin]["x_vals"]
+            all_sizes.append(sizes)
+        fewest_sizes = sorted(all_sizes, key=len)[0]
+        result[bin] = fewest_sizes
+    return result
 
 def make_a_figure(data, colors=["tomato", "turquoise", "violet", "springgreen",\
     "yellow", "seagreen", "royalblue", "indigo", "sienna", \
@@ -864,4 +997,4 @@ def get_session_trials(animal_name, session_filename):
 
 if __name__ == "__main__":
     animals_and_sessions = get_animals_and_their_session_filenames('input')
-    analyze_sessions(animals_and_sessions)
+    analyze_sessions(animals_and_sessions, graph_summary_stats=True)
