@@ -78,6 +78,7 @@ def get_data_for_figure(animal_name, sessions):
     all_trials = get_trials_from_all_sessions(animal_name, sessions)
     all_size_30 = get_size_30_trial_results(all_trials)
     rotations, pct_corrects, totals = get_stats_for_each_rotation(all_size_30)
+    print "Finished analysis for ", animal_name
     return {
         "animal_name": animal_name,
         "rotations": rotations,
@@ -131,6 +132,7 @@ def get_size_30_trial_results(all_trials):
     return result
 
 def get_trials_from_all_sessions(animal_name, sessions):
+    print "Starting analysis for ", animal_name
     all_trials_all_sessions = []
     for session in sessions:
         trials = get_session_trials(animal_name, session)
