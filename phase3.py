@@ -43,35 +43,52 @@ def analyze_sessions(animals_and_sessions, graph_summary_stats=False):
 
 def make_a_figure(data_for_animal):
     plt.close('all')
-    plt.plot(
+
+    f, ax_arr = plt.subplots(2, 1)
+    f.suptitle(data_for_animal["animal_name"] + " phase 3 performance (all stimuli 30 deg. visual angle size)")
+
+    ax_arr[0].plot(
         data_for_animal["rotations"],
         data_for_animal["pct_corrects"],
         "-o",
         color="turquoise",
-        linewidth=2.0,
+        linewidth=3.0,
     )
-    plt.xlim(-65.0, 65.0)
-    plt.ylim(0.0, 100.0)
-    plt.grid(axis="y")
-    plt.xlabel("Stimulus rotation in depth (degrees)")
-    plt.ylabel("Percent correct")
-    plt.title(data_for_animal["animal_name"] + " phase 3 performance (all stimuli 30 deg. visual angle size)")
+    ax_arr[0].set_xlim(-65.0, 65.0)
+    ax_arr[0].set_ylim(0.0, 100.0)
+    ax_arr[0].grid(axis="y")
+    ax_arr[0].set_xlabel("Stimulus rotation in depth (degrees)")
+    ax_arr[0].set_ylabel("Percent correct")
+
+    ax_arr[1].plot(
+        data_for_animal["rotations"],
+        data_for_animal["total_trials"],
+        "-o",
+        color="tomato",
+        linewidth=3.0
+    )
+    ax_arr[1].set_xlim(-65.0, 65.0)
+    ax_arr[1].set_ylim(0, max(data_for_animal["total_trials"]))
+    ax_arr[1].set_xlabel("Stimulus rotation in depth (degrees)")
+    ax_arr[1].set_ylabel("Sample size (total trials)")
 
     plt.show()
 
 def get_data_for_figure(animal_name, sessions):
     all_trials = get_trials_from_all_sessions(animal_name, sessions)
     all_size_30 = get_size_30_trial_results(all_trials)
-    rotations, pct_corrects = get_stats_for_each_rotation(all_size_30)
+    rotations, pct_corrects, totals = get_stats_for_each_rotation(all_size_30)
     return {
         "animal_name": animal_name,
         "rotations": rotations,
-        "pct_corrects": pct_corrects
+        "pct_corrects": pct_corrects,
+        "total_trials": totals
     }
 
 def get_stats_for_each_rotation(all_size_30_trials):
     rotations = []
     pct_corrects = []
+    total_trials = []
     for rotation, behavior_list in all_size_30_trials.iteritems():
         success = 0
         failure = 0
@@ -87,14 +104,16 @@ def get_stats_for_each_rotation(all_size_30_trials):
                 print "unknown behavior"
         try:
             pct_correct = ((float(success))/(float(success + failure + ignore))) * 100
+            total = success + failure + ignore
             rotations.append(rotation)
             pct_corrects.append(pct_correct)
+            total_trials.append(total)
         except ZeroDivisionError:
             pass
-    xy = zip(rotations, pct_corrects)
-    xy.sort()
-    rotations, pct_corrects = zip(*xy)
-    return rotations, pct_corrects
+    xyz = zip(rotations, pct_corrects, total_trials)
+    xyz.sort()
+    rotations, pct_corrects, total_trials = zip(*xyz)
+    return rotations, pct_corrects, total_trials
 
 def get_size_30_trial_results(all_trials):
     '''
