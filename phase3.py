@@ -1,4 +1,122 @@
+import os
+import multiprocessing
 import pymworks
+import matplotlib.pyplot as plt
+
+def get_animals_and_their_session_filenames(path):
+    '''
+    Returns a dict with animal names as keys (it gets their names from the
+        folder names in 'input' folder--each animal should have its own
+        folder with .mwk session files) and a list of .mwk filename strings as
+        values.
+            e.g. {'V1': ['V1_140501.mwk', 'V1_140502.mwk']}
+
+    :param path: a string of the directory name containing animals' folders
+    '''
+    #TODO maybe make this better, it's slow as hell and ugly
+    result = {}
+    dirs_list = [each for each in os.walk(path)]
+    for each in dirs_list[1:]:
+        files_list = each[2]
+        animal_name = each[0].split("/")[len(each[0].split("/")) - 1]
+        result[animal_name] = [] #list of filenames
+        for filename in files_list:
+            if not filename.startswith('.'): #dont want hidden files
+                result[animal_name].append(filename)
+    return result
+
+def analyze_sessions(animals_and_sessions, graph_summary_stats=False):
+    pool = multiprocessing.Pool(None)
+    results = []
+    for animal, sessions in animals_and_sessions.iteritems():
+        result = pool.apply_async(get_data_for_figure,
+            args=(animal, sessions))
+        results.append(result)
+    pool.close()
+    pool.join()
+
+    all_data = []
+    for each in results:
+        data_for_animal = each.get()
+        all_data.append(data_for_animal)
+        make_a_figure(data_for_animal)
+
+def make_a_figure(data_for_animal):
+    plt.close('all')
+    plt.plot(
+        data_for_animal["rotations"],
+        data_for_animal["pct_corrects"],
+        "-o",
+        color="turquoise",
+        linewidth=2.0,
+    )
+    plt.xlim(-65.0, 65.0)
+    plt.ylim(0.0, 100.0)
+    plt.grid(axis="y")
+    plt.xlabel("Stimulus rotation in depth (degrees)")
+    plt.ylabel("Percent correct")
+    plt.title(data_for_animal["animal_name"] + " phase 3 performance (all stimuli 30 deg. visual angle size)")
+
+    plt.show()
+
+def get_data_for_figure(animal_name, sessions):
+    all_trials = get_trials_from_all_sessions(animal_name, sessions)
+    all_size_30 = get_size_30_trial_results(all_trials)
+    rotations, pct_corrects = get_stats_for_each_rotation(all_size_30)
+    return {
+        "animal_name": animal_name,
+        "rotations": rotations,
+        "pct_corrects": pct_corrects
+    }
+
+def get_stats_for_each_rotation(all_size_30_trials):
+    rotations = []
+    pct_corrects = []
+    for rotation, behavior_list in all_size_30_trials.iteritems():
+        success = 0
+        failure = 0
+        ignore = 0
+        for behavior in behavior_list:
+            if behavior == "success":
+                success += 1
+            elif behavior == "failure":
+                failure += 1
+            elif behavior == "ignore":
+                ignore += 1
+            else:
+                print "unknown behavior"
+        try:
+            pct_correct = ((float(success))/(float(success + failure + ignore))) * 100
+            rotations.append(rotation)
+            pct_corrects.append(pct_correct)
+        except ZeroDivisionError:
+            pass
+    xy = zip(rotations, pct_corrects)
+    xy.sort()
+    rotations, pct_corrects = zip(*xy)
+    return rotations, pct_corrects
+
+def get_size_30_trial_results(all_trials):
+    '''
+    Returns a dict with stim rotation keys and a list of behavior_outcome
+    as values. Returns only size 30 results because only this size can
+    rotate in phase 3.
+    '''
+    result = {}
+    for trial in all_trials:
+        if trial["stm_size"] == 30.0:
+            try:
+                result[trial["stm_rotation"]].append(trial["behavior_outcome"])
+            except KeyError:
+                result[trial["stm_rotation"]] = [trial["behavior_outcome"]]
+    return result
+
+def get_trials_from_all_sessions(animal_name, sessions):
+    all_trials_all_sessions = []
+    for session in sessions:
+        trials = get_session_trials(animal_name, session)
+        all_trials_all_sessions += trials
+    return all_trials_all_sessions
 
 def get_session_trials(animal_name, session_filename):
     '''
@@ -75,3 +193,7 @@ def get_session_trials(animal_name, session_filename):
                 trials.append(trial)
                 trial_num += 1
     return trials
+
+if __name__ == "__main__":
+    animals_and_sessions = get_animals_and_their_session_filenames("input/phase3")
+    analyze_sessions(animals_and_sessions)
