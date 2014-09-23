@@ -997,5 +997,5 @@ def get_session_trials(animal_name, session_filename):
     return trials
 
 if __name__ == "__main__":
-    animals_and_sessions = get_animals_and_their_session_filenames('input')
+    animals_and_sessions = get_animals_and_their_session_filenames('input/phase2')
     analyze_sessions(animals_and_sessions, graph_summary_stats=True)
