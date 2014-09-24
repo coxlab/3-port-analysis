@@ -73,18 +73,69 @@ def make_a_figure(data_for_animal):
     ax_arr[1].set_ylabel("Sample size (total trials)")
 
     plt.show()
+    plt.close('all')
+
+    plt.fill_between(
+        data_for_animal["progress_graph_data"]["x"],
+        data_for_animal["progress_graph_data"]["y1"],
+        data_for_animal["progress_graph_data"]["y2"],
+        facecolor="tomato",
+        alpha=0.6
+    )
+
+    plt.ylim(-65.0, 65.0)
+    plt.xlim(50, max(data_for_animal["progress_graph_data"]["x"]))
+    plt.xticks(data_for_animal["progress_graph_data"]["x"])
+    plt.grid(axis="y")
+    plt.xlabel("Trial number (50 trials per bin)")
+    plt.ylabel("Range of rotations tested")
+    plt.title(data_for_animal["animal_name"] + " rotation progress over time")
+
+    plt.show()
 
 def get_data_for_figure(animal_name, sessions):
     all_trials = get_trials_from_all_sessions(animal_name, sessions)
     all_size_30 = get_size_30_trial_results(all_trials)
     rotations, pct_corrects, totals = get_stats_for_each_rotation(all_size_30)
+    progress_data = get_progress_over_time(all_trials)
     print "Finished analysis for ", animal_name
     return {
         "animal_name": animal_name,
         "rotations": rotations,
         "pct_corrects": pct_corrects,
-        "total_trials": totals
+        "total_trials": totals,
+        "progress_graph_data": progress_data
     }
+
+def get_progress_over_time(all_trials, trials_per_bin=50):
+    num_trials_range = []
+    max_rotation_right_in_range = []
+    max_rotation_left_in_range = []
+
+    num_trials = trials_per_bin
+    tmp_trials_list = []
+    for trial in all_trials:
+        if trial["stm_size"] == 30.0:
+            if len(tmp_trials_list) == trials_per_bin:
+                rots = [t["stm_rotation"] for t in tmp_trials_list]
+                max_right = max(rots)
+                max_left = min(rots)
+
+                num_trials_range.append(num_trials)
+                max_rotation_right_in_range.append(max_right)
+                max_rotation_left_in_range.append(max_left)
+
+                tmp_trials_list = [trial]
+                num_trials += trials_per_bin
+            else:
+                tmp_trials_list.append(trial)
+
+    return {
+        "x": num_trials_range,
+        "y1": max_rotation_left_in_range,
+        "y2": max_rotation_right_in_range
+    }
+
 
 def get_stats_for_each_rotation(all_size_30_trials):
     rotations = []
