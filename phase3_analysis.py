@@ -1,5 +1,6 @@
 import os
 import multiprocessing
+import math
 import pymworks
 import matplotlib.pyplot as plt
 
@@ -40,6 +41,120 @@ def analyze_sessions(animals_and_sessions, graph_summary_stats=False):
         data_for_animal = each.get()
         all_data.append(data_for_animal)
         make_a_figure(data_for_animal)
+
+    if graph_summary_stats:
+        data = get_summary_stats_data(all_data)
+        make_summary_stats_figure(data)
+
+def make_summary_stats_figure(data):
+
+    plt.close('all')
+
+    f, ax_arr = plt.subplots(2, 1)
+    f.suptitle("All animals percent correct (all stimuli 30 degrees visual angle size)")
+
+    ax_arr[0].errorbar(
+        data["x_vals_rotations"],
+        data["y_vals_pct_correct"],
+        yerr=data["std_devs"],
+        fmt="-o",
+        color="turquoise",
+        linewidth=3.0
+    )
+    ax_arr[0].set_xlim(-65.0, 65.0)
+    ax_arr[0].set_ylim(0.0, 100.0)
+    ax_arr[0].grid(axis="y")
+    ax_arr[0].set_ylabel("Percent correct +/- SSD")
+
+    ax_arr[1].errorbar(
+        data["sample_size_data"]["x_vals_rotations"],
+        data["sample_size_data"]["y_vals_num_trials"],
+        yerr=data["sample_size_data"]["std_devs_num_trials"],
+        fmt="-o",
+        color="tomato",
+        linewidth=3.0
+    )
+    ax_arr[1].set_xlim(-65.0, 65.0)
+    ax_arr[1].set_ylim(0, max(data["sample_size_data"]["y_vals_num_trials"]) + max(data["sample_size_data"]["std_devs_num_trials"]))
+    ax_arr[1].set_ylabel("Sample size (total trials) +/- SSD")
+    ax_arr[1].set_xlabel("Stimulus rotation in depth")
+
+    plt.show()
+
+def get_summary_stats_data(all_data):
+    result1 = []
+    result2 = []
+    for animal_data in all_data:
+        x = animal_data["rotations"]
+        y = animal_data["pct_corrects"]
+        y2 = animal_data["total_trials"]
+        tmp = zip(x, y)
+        tmp2 = zip(x, y2)
+        result1.append(tmp)
+        result2.append(tmp2)
+    result1 = zip(*result1)
+    result2 = zip(*result2)
+
+    x_vals1 = []
+    y_vals1 = []
+    errors1 = []
+    for each in result1:
+        all_animal_percentages = []
+        all_rots = []
+        for rot, percent in each:
+            all_animal_percentages.append(percent)
+            all_rots.append(rot)
+        if allSameRotation(all_rots):
+            mean, std_dev = calc_summary_stats(all_animal_percentages)
+            rot = all_rots[0]
+            x_vals1.append(rot)
+            y_vals1.append(mean)
+            errors1.append(std_dev)
+        else:
+            print "get_summary_stats_data() getting unexpected data"
+
+    x_vals2 = []
+    y_vals2 = []
+    errors2 = []
+    for each in result2:
+        all_animal_samplesize = []
+        all_rots = []
+        for rot, n in each:
+            all_animal_samplesize.append(n)
+            all_rots.append(rot)
+        if allSameRotation(all_rots):
+            mean, std_dev = calc_summary_stats(all_animal_samplesize)
+            rot = all_rots[0]
+            x_vals2.append(rot)
+            y_vals2.append(mean)
+            errors2.append(std_dev)
+
+    return {
+        "x_vals_rotations": x_vals1,
+        "y_vals_pct_correct": y_vals1,
+        "std_devs": errors1,
+        "sample_size_data": {
+            "x_vals_rotations": x_vals2,
+            "y_vals_num_trials": y_vals2,
+            "std_devs_num_trials": errors2
+        }
+    }
+
+def calc_summary_stats(list_of_floats):
+    mean = math.fsum(list_of_floats)/len(list_of_floats)
+    variance = (math.fsum([(fl - mean)**2.0 for fl in list_of_floats]))/(len(list_of_floats) - 1)
+    std_dev = math.sqrt(variance)
+    return mean, std_dev
+
+def allSameRotation(list_of_stim_rotations):
+    i = 1
+    first = list_of_stim_rotations[0]
+    while i < len(list_of_stim_rotations):
+        current = list_of_stim_rotations[i]
+        if current != first:
+            return False
+        i += 1
+    return True
 
 def make_a_figure(data_for_animal):
     plt.close('all')
@@ -268,4 +383,4 @@ def get_session_trials(animal_name, session_filename):
 
 if __name__ == "__main__":
     animals_and_sessions = get_animals_and_their_session_filenames("input/phase3")
-    analyze_sessions(animals_and_sessions)
+    analyze_sessions(animals_and_sessions, graph_summary_stats=True)
