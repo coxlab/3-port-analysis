@@ -82,52 +82,52 @@ def make_summary_stats_figure(data):
     plt.show()
 
 def get_summary_stats_data(all_data):
-    result1 = []
-    result2 = []
+    result1 = {} #keys=rotation_float vals=list of percentage floats for each animal
+    result2 = {} #keys=rotation_float vals=list of num_trials ints for each animal
     for animal_data in all_data:
         x = animal_data["rotations"]
-        y = animal_data["pct_corrects"]
+        y1 = animal_data["pct_corrects"]
         y2 = animal_data["total_trials"]
-        tmp = zip(x, y)
-        tmp2 = zip(x, y2)
-        result1.append(tmp)
-        result2.append(tmp2)
-    result1 = zip(*result1)
-    result2 = zip(*result2)
+        for rotation, pct, sample_size in zip(x, y1, y2):
+            try:
+                result1[rotation].append(pct)
+            except KeyError:
+                result1[rotation] = [pct]
+            try:
+                result2[rotation].append(sample_size)
+            except KeyError:
+                result2[rotation] = [sample_size]
 
+    #longest list has all animals
+    #only want to plot summary stats for datapoints with all animals
+    longest_1 = get_longest_vals_list_in_dict(result1)
     x_vals1 = []
     y_vals1 = []
     errors1 = []
-    for each in result1:
-        all_animal_percentages = []
-        all_rots = []
-        for rot, percent in each:
-            all_animal_percentages.append(percent)
-            all_rots.append(rot)
-        if allSameRotation(all_rots):
-            mean, std_dev = calc_summary_stats(all_animal_percentages)
-            rot = all_rots[0]
-            x_vals1.append(rot)
+    for rotation, percentages in result1.iteritems():
+        if len(percentages) == longest_1: # <-- only add results with data for all animals
+            mean, std_dev = calc_summary_stats(percentages)
+            x_vals1.append(rotation)
             y_vals1.append(mean)
             errors1.append(std_dev)
-        else:
-            print "get_summary_stats_data() getting unexpected data"
+    xyz1 = zip(x_vals1, y_vals1, errors1)
+    xyz1.sort()
+    x_vals1, y_vals1, errors1 = zip(*xyz1)
 
+
+    longest_2 = get_longest_vals_list_in_dict(result2)
     x_vals2 = []
     y_vals2 = []
     errors2 = []
-    for each in result2:
-        all_animal_samplesize = []
-        all_rots = []
-        for rot, n in each:
-            all_animal_samplesize.append(n)
-            all_rots.append(rot)
-        if allSameRotation(all_rots):
-            mean, std_dev = calc_summary_stats(all_animal_samplesize)
-            rot = all_rots[0]
-            x_vals2.append(rot)
+    for rotation, sample_sizes in result2.iteritems():
+        if len(sample_sizes) == longest_2:
+            mean, std_dev = calc_summary_stats(sample_sizes)
+            x_vals2.append(rotation)
             y_vals2.append(mean)
             errors2.append(std_dev)
+    xyz2 = zip(x_vals2, y_vals2, errors2)
+    xyz2.sort()
+    x_vals2, y_vals2, errors2 = zip(*xyz2)
 
     return {
         "x_vals_rotations": x_vals1,
@@ -140,21 +140,19 @@ def get_summary_stats_data(all_data):
         }
     }
 
+def get_longest_vals_list_in_dict(dict_with_list_as_values):
+    longest = 0
+    for k, v in dict_with_list_as_values.iteritems():
+        length = len(v)
+        if length > longest:
+            longest = length
+    return longest
+
 def calc_summary_stats(list_of_floats):
     mean = math.fsum(list_of_floats)/len(list_of_floats)
     variance = (math.fsum([(fl - mean)**2.0 for fl in list_of_floats]))/(len(list_of_floats) - 1)
     std_dev = math.sqrt(variance)
     return mean, std_dev
-
-def allSameRotation(list_of_stim_rotations):
-    i = 1
-    first = list_of_stim_rotations[0]
-    while i < len(list_of_stim_rotations):
-        current = list_of_stim_rotations[i]
-        if current != first:
-            return False
-        i += 1
-    return True
 
 def make_a_figure(data_for_animal):
     plt.close('all')
