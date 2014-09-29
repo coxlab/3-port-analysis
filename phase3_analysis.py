@@ -77,7 +77,59 @@ def make_summary_stats_figure(data):
     ax_arr[1].set_xlim(-65.0, 65.0)
     ax_arr[1].set_ylim(0, max(data["sample_size_data"]["y_vals_num_trials"]) + max(data["sample_size_data"]["std_devs_num_trials"]))
     ax_arr[1].set_ylabel("Sample size (total trials) +/- SSD")
-    ax_arr[1].set_xlabel("Stimulus rotation in depth")
+    ax_arr[1].set_xlabel("Stimulus rotation in depth (degrees)")
+
+    plt.show()
+
+    std_errors_performance = [sd/math.sqrt(len(data["std_devs"])) for sd in data["std_devs"]]
+    std_errors_samplesize = [sd/math.sqrt(len(data["sample_size_data"]["std_devs_num_trials"])) for sd in data["sample_size_data"]["std_devs_num_trials"]]
+    max_performance = [mean + std_error for mean, std_error in zip(data["y_vals_pct_correct"], std_errors_performance)]
+    min_performance = [mean - std_error for mean, std_error in zip(data["y_vals_pct_correct"], std_errors_performance)]
+    max_samplesize = [mean + std_error for mean, std_error in zip(data["sample_size_data"]["y_vals_num_trials"], std_errors_samplesize)]
+    min_samplesize = [mean - std_error for mean, std_error in zip(data["sample_size_data"]["y_vals_num_trials"], std_errors_samplesize)]
+
+    plt.close('all')
+
+    f, ax_arr = plt.subplots(2, 1)
+    f.suptitle("All animals percent correct (all stimuli 30 degrees visual angle size)")
+
+    ax_arr[0].plot(
+        data["x_vals_rotations"],
+        data["y_vals_pct_correct"],
+        color="turquoise",
+        linewidth=1.0
+    )
+    ax_arr[0].fill_between(
+        data["x_vals_rotations"],
+        max_performance,
+        min_performance,
+        color="none",
+        facecolor="turquoise",
+        alpha=0.3
+    )
+    ax_arr[0].set_xlim(-65.0, 65.0)
+    ax_arr[0].set_ylim(0.0, 100.0)
+    ax_arr[0].set_ylabel("Percent correct +/- SEM")
+    ax_arr[0].grid(axis="y")
+
+    ax_arr[1].plot(
+        data["sample_size_data"]["x_vals_rotations"],
+        data["sample_size_data"]["y_vals_num_trials"],
+        color="tomato",
+        linewidth=1.0
+    )
+    ax_arr[1].fill_between(
+        data["sample_size_data"]["x_vals_rotations"],
+        max_samplesize,
+        min_samplesize,
+        color="none",
+        facecolor="tomato",
+        alpha=0.3
+    )
+    ax_arr[1].set_xlim(-65.0, 65.0)
+    ax_arr[1].set_ylim(0.0, max(max_samplesize))
+    ax_arr[1].set_ylabel("Sample size (total trials) +/- SEM")
+    ax_arr[1].set_xlabel("Stimulus rotation in depth (degrees)")
 
     plt.show()
 
