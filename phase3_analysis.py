@@ -97,7 +97,7 @@ def make_summary_stats_figure(data):
         data["x_vals_rotations"],
         data["y_vals_pct_correct"],
         color="turquoise",
-        linewidth=1.0
+        linewidth=1.5
     )
     ax_arr[0].fill_between(
         data["x_vals_rotations"],
@@ -116,7 +116,7 @@ def make_summary_stats_figure(data):
         data["sample_size_data"]["x_vals_rotations"],
         data["sample_size_data"]["y_vals_num_trials"],
         color="tomato",
-        linewidth=1.0
+        linewidth=1.5
     )
     ax_arr[1].fill_between(
         data["sample_size_data"]["x_vals_rotations"],
@@ -241,7 +241,7 @@ def make_a_figure(data_for_animal):
     plt.close('all')
 
     plt.fill_between(
-        [index for index, data in enumerate(data_for_animal["progress_graph_data"]["x"])],
+        [index + 1 for index, data in enumerate(data_for_animal["progress_graph_data"]["x"])],
         data_for_animal["progress_graph_data"]["y1"],
         data_for_animal["progress_graph_data"]["y2"],
         facecolor="tomato",
@@ -249,8 +249,8 @@ def make_a_figure(data_for_animal):
     )
 
     plt.ylim(-65.0, 65.0)
-    plt.xlim(1, max([index for index, data in enumerate(data_for_animal["progress_graph_data"]["x"])]))
-    plt.xticks([index for index, data in enumerate(data_for_animal["progress_graph_data"]["x"])])
+    plt.xlim(1, max([index + 1 for index, data in enumerate(data_for_animal["progress_graph_data"]["x"])]))
+    plt.xticks([index + 1 for index, data in enumerate(data_for_animal["progress_graph_data"]["x"])])
     plt.grid(axis="y")
     plt.xlabel("Bin number (50 trials per bin)")
     plt.ylabel("Range of rotations tested")
