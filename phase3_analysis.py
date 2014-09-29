@@ -65,6 +65,24 @@ def make_summary_stats_figure(data):
     ax_arr[0].set_ylim(0.0, 100.0)
     ax_arr[0].grid(axis="y")
     ax_arr[0].set_ylabel("Percent correct +/- SSD")
+    ax_arr[0].errorbar(
+        [0.0],
+        [data["size_40_data"]["size_40_avg"]],
+        yerr=[data["size_40_data"]["size_40_std_dev"]],
+        fmt="*",
+        color="violet",
+        markersize=9.0
+    )
+    ax_arr[0].annotate(
+        "stimulus size = 40; rotation = 0",
+        xy=(0, data["size_40_data"]["size_40_avg"]),
+        xycoords="data",
+        textcoords="offset points",
+        xytext=(30, -85),
+        ha="center",
+        va="top",
+        arrowprops=dict(facecolor="black", shrink=0.1, width=1, headwidth=3.0)
+    )
 
     ax_arr[1].errorbar(
         data["sample_size_data"]["x_vals_rotations"],
@@ -106,6 +124,24 @@ def make_summary_stats_figure(data):
         color="none",
         facecolor="turquoise",
         alpha=0.3
+    )
+    ax_arr[0].errorbar(
+        [0.0],
+        [data["size_40_data"]["size_40_avg"]],
+        yerr=[data["size_40_data"]["size_40_std_error"]],
+        fmt="*",
+        color="violet",
+        markersize=7.0
+    )
+    ax_arr[0].annotate(
+        "stimulus size = 40; rotation = 0",
+        xy=(0, data["size_40_data"]["size_40_avg"]),
+        xycoords="data",
+        textcoords="offset points",
+        xytext=(30, -85),
+        ha="center",
+        va="top",
+        arrowprops=dict(facecolor="black", shrink=0.12, width=1, headwidth=3.0)
     )
     ax_arr[0].set_xlim(-65.0, 65.0)
     ax_arr[0].set_ylim(0.0, 100.0)
@@ -181,6 +217,12 @@ def get_summary_stats_data(all_data):
     xyz2.sort()
     x_vals2, y_vals2, errors2 = zip(*xyz2)
 
+    size_40_pct_corrects = []
+    for animal_data in all_data:
+        size_40_pct_corrects.append(animal_data["size_40_pct_correct"])
+
+    size_40_mean_pct_correct, size_40_std_dev = calc_summary_stats(size_40_pct_corrects)
+
     return {
         "x_vals_rotations": x_vals1,
         "y_vals_pct_correct": y_vals1,
@@ -189,6 +231,11 @@ def get_summary_stats_data(all_data):
             "x_vals_rotations": x_vals2,
             "y_vals_num_trials": y_vals2,
             "std_devs_num_trials": errors2
+        },
+        "size_40_data": {
+            "size_40_avg": size_40_mean_pct_correct,
+            "size_40_std_dev": size_40_std_dev,
+            "size_40_std_error": size_40_std_dev/math.sqrt(len(size_40_pct_corrects))
         }
     }
 
@@ -222,8 +269,24 @@ def make_a_figure(data_for_animal):
     ax_arr[0].set_xlim(-65.0, 65.0)
     ax_arr[0].set_ylim(0.0, 100.0)
     ax_arr[0].grid(axis="y")
-    ax_arr[0].set_xlabel("Stimulus rotation in depth (degrees)")
     ax_arr[0].set_ylabel("Percent correct")
+    ax_arr[0].plot(
+        [0.0],
+        [data_for_animal["size_40_pct_correct"]],
+        "*",
+        color="violet",
+        markersize=9.0
+    )
+    ax_arr[0].annotate(
+        "stimulus size = 40; rotation = 0; n = %s" % data_for_animal["size_40_total_trials"],
+        xy=(0, data_for_animal["size_40_pct_correct"]),
+        xycoords="data",
+        textcoords="offset points",
+        xytext=(30, -85),
+        ha="center",
+        va="top",
+        arrowprops=dict(facecolor="black", shrink=0.12, width=1, headwidth=3.0)
+    )
 
     ax_arr[1].plot(
         data_for_animal["rotations"],
@@ -263,14 +326,48 @@ def get_data_for_figure(animal_name, sessions):
     all_size_30 = get_size_30_trial_results(all_trials)
     rotations, pct_corrects, totals = get_stats_for_each_rotation(all_size_30)
     progress_data = get_progress_over_time(all_trials)
+    all_size_40 = get_size_40_outcomes(all_trials)
+    pct_correct_40 = get_pct_correct_at_size_40(all_size_40)
+
     print "Finished analysis for ", animal_name
     return {
         "animal_name": animal_name,
         "rotations": rotations,
         "pct_corrects": pct_corrects,
         "total_trials": totals,
-        "progress_graph_data": progress_data
+        "progress_graph_data": progress_data,
+        "size_40_pct_correct": pct_correct_40,
+        "size_40_total_trials": len(all_size_40)
     }
+
+def get_size_40_outcomes(all_trials):
+    result = []
+    for trial in all_trials:
+        if trial["stm_size"] == 40.0:
+            result.append(trial["behavior_outcome"])
+    return result
+
+def get_pct_correct_at_size_40(behavior_outcome_list):
+    success = 0
+    failure = 0
+    ignore = 0
+    for behavior in behavior_outcome_list:
+        if behavior == "success":
+            success += 1
+        elif behavior == "failure":
+            failure += 1
+        elif behavior == "ignore":
+            ignore += 1
+        else:
+            print "something's wrong, yo. check out get_pct_correct_at_size_40()"
+
+    total_trials = success + failure + ignore
+    try:
+        pct_correct = ((float(success))/(float(total_trials))) * 100
+    except ZeroDivisionError:
+        pct_correct = None
+        print "Need to write exception code to handle 0 40 deg visual angle trials"
+    return pct_correct
 
 def get_progress_over_time(all_trials, trials_per_bin=50):
     num_trials_range = []
