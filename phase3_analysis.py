@@ -241,7 +241,7 @@ def make_a_figure(data_for_animal):
     plt.close('all')
 
     plt.fill_between(
-        data_for_animal["progress_graph_data"]["x"],
+        [index for index, data in enumerate(data_for_animal["progress_graph_data"]["x"])],
         data_for_animal["progress_graph_data"]["y1"],
         data_for_animal["progress_graph_data"]["y2"],
         facecolor="tomato",
@@ -249,10 +249,10 @@ def make_a_figure(data_for_animal):
     )
 
     plt.ylim(-65.0, 65.0)
-    plt.xlim(50, max(data_for_animal["progress_graph_data"]["x"]))
-    plt.xticks(data_for_animal["progress_graph_data"]["x"])
+    plt.xlim(1, max([index for index, data in enumerate(data_for_animal["progress_graph_data"]["x"])]))
+    plt.xticks([index for index, data in enumerate(data_for_animal["progress_graph_data"]["x"])])
     plt.grid(axis="y")
-    plt.xlabel("Trial number (50 trials per bin)")
+    plt.xlabel("Bin number (50 trials per bin)")
     plt.ylabel("Range of rotations tested")
     plt.title(data_for_animal["animal_name"] + " rotation progress over time")
 
