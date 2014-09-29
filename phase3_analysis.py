@@ -168,6 +168,28 @@ def make_summary_stats_figure(data):
     ax_arr[1].set_xlabel("Stimulus rotation in depth (degrees)")
 
     plt.show()
+    plt.close('all')
+
+    plt.plot(
+        data["nth_time_seen_data"]["nth_time_seen"],
+        data["nth_time_seen_data"]["nth_performance"],
+        color="turquoise",
+        linewidth=1.5
+    )
+    plt.fill_between(
+        data["nth_time_seen_data"]["nth_time_seen"],
+        [mean + err for mean, err in zip(data["nth_time_seen_data"]["nth_performance"], data["nth_time_seen_data"]["nth_std_errs"])],
+        [mean - err for mean, err in zip(data["nth_time_seen_data"]["nth_performance"], data["nth_time_seen_data"]["nth_std_errs"])],
+        color="none",
+        facecolor="turquoise",
+        alpha=0.3
+    )
+    plt.xlim(1, len(data["nth_time_seen_data"]["nth_time_seen"]))
+    plt.ylim(0.0, 100.0)
+    plt.grid(axis="y")
+    plt.ylabel("Performance (% correct)")
+
+    plt.show()
 
 def get_summary_stats_data(all_data):
     result1 = {} #keys=rotation_float vals=list of percentage floats for each animal
@@ -223,6 +245,22 @@ def get_summary_stats_data(all_data):
 
     size_40_mean_pct_correct, size_40_std_dev = calc_summary_stats(size_40_pct_corrects)
 
+    nth_performances = []
+    for animal_data in all_data:
+        nth_performances.append(animal_data["nth_time_seen_data"]["nth_performance"])
+    nth_performances = zip(*nth_performances)
+
+    num_times_seen = []
+    performances = []
+    nth_std_devs = []
+    nth_std_errs = []
+    for index, performance in enumerate(nth_performances):
+        mean, std_dev = calc_summary_stats(performance)
+        num_times_seen.append(index + 1)
+        performances.append(mean)
+        nth_std_devs.append(std_dev)
+        nth_std_errs.append(std_dev/math.sqrt(len(performance)))
+
     return {
         "x_vals_rotations": x_vals1,
         "y_vals_pct_correct": y_vals1,
@@ -236,6 +274,12 @@ def get_summary_stats_data(all_data):
             "size_40_avg": size_40_mean_pct_correct,
             "size_40_std_dev": size_40_std_dev,
             "size_40_std_error": size_40_std_dev/math.sqrt(len(size_40_pct_corrects))
+        },
+        "nth_time_seen_data": {
+            "nth_time_seen": num_times_seen,
+            "nth_performance": performances,
+            "nth_std_devs": nth_std_devs,
+            "nth_std_errs": nth_std_errs
         }
     }
 
@@ -328,6 +372,7 @@ def get_data_for_figure(animal_name, sessions):
     progress_data = get_progress_over_time(all_trials)
     all_size_40 = get_size_40_outcomes(all_trials)
     pct_correct_40 = get_pct_correct_at_size_40(all_size_40)
+    nth_time_seen, nth_performance = get_performance_by_nth_time_seen(all_trials)
 
     print "Finished analysis for ", animal_name
     return {
@@ -337,8 +382,48 @@ def get_data_for_figure(animal_name, sessions):
         "total_trials": totals,
         "progress_graph_data": progress_data,
         "size_40_pct_correct": pct_correct_40,
-        "size_40_total_trials": len(all_size_40)
+        "size_40_total_trials": len(all_size_40),
+        "nth_time_seen_data": {
+            "nth_time_seen": nth_time_seen,
+            "nth_performance": nth_performance
+        }
     }
+
+def get_performance_by_nth_time_seen(all_trials):
+    tmp = {} #keys=rotation float values=list of behavior_outcome events in order of appearance
+    for trial in all_trials:
+        if trial["stm_size"] == 30.0:
+            try:
+                tmp[trial["stm_rotation"]].append(trial["behavior_outcome"])
+            except KeyError:
+                tmp[trial["stm_rotation"]] = [trial["behavior_outcome"]]
+    nth_outcomes = []
+    for rotation, outcomes in tmp.iteritems():
+        nth_outcomes.append(outcomes)
+    nth_outcomes = zip(*nth_outcomes)
+
+    nth_time_seen = []
+    nth_performance = []
+    for index, outcome_list in enumerate(nth_outcomes):
+        success = 0
+        failure = 0
+        ignore = 0
+        for outcome in outcome_list:
+            if outcome == "success":
+                success += 1
+            elif outcome == "failure":
+                failure += 1
+            elif outcome == "ignore":
+                ignore += 1
+            else:
+                print "get_performance_by_nth_time_seen() FAIL"
+        try:
+            pct = ((float(success))/(float(success + failure + ignore))) * 100
+        except ZeroDivisionError:
+            pct = None
+        nth_time_seen.append(index + 1)
+        nth_performance.append(pct)
+    return nth_time_seen, nth_performance
 
 def get_size_40_outcomes(all_trials):
     result = []
