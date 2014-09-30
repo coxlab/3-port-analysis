@@ -364,6 +364,23 @@ def make_a_figure(data_for_animal):
     plt.title(data_for_animal["animal_name"] + " rotation progress over time")
 
     plt.show()
+    plt.close('all')
+
+    plt.plot(
+        data_for_animal["nth_time_seen_data"]["nth_time_seen"],
+        data_for_animal["nth_time_seen_data"]["nth_performance"],
+        "-o",
+        color="turquoise",
+        linewidth=3.0
+    )
+    plt.title(data_for_animal["animal_name"] + " phase 3 performance by rotation novelty")
+    plt.xlim(0, max(data_for_animal["nth_time_seen_data"]["nth_time_seen"]) + 1)
+    plt.ylim(0.0, 100.0)
+    plt.grid(axis="y")
+    plt.xlabel("nth time seen")
+    plt.ylabel("Performance (% correct)")
+
+    plt.show()
 
 def get_data_for_figure(animal_name, sessions):
     all_trials = get_trials_from_all_sessions(animal_name, sessions)
