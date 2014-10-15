@@ -1,0 +1,83 @@
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/!svn/ver/35/behavior/code/experiments/RatBehaviorGeneral/Sounds
+END
+DZ_sound_long_600_left.wav
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/!svn/ver/35/behavior/code/experiments/RatBehaviorGeneral/Sounds/DZ_sound_long_600_left.wav
+END
+DZ_sound_600_left.wav
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/!svn/ver/35/behavior/code/experiments/RatBehaviorGeneral/Sounds/DZ_sound_600_left.wav
+END
+failure_DZ.wav
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/!svn/ver/35/behavior/code/experiments/RatBehaviorGeneral/Sounds/failure_DZ.wav
+END
+DZ_sound_long_6000_right.wav
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/!svn/ver/35/behavior/code/experiments/RatBehaviorGeneral/Sounds/DZ_sound_long_6000_right.wav
+END
+DZ_sound_6000_right.wav
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/!svn/ver/35/behavior/code/experiments/RatBehaviorGeneral/Sounds/DZ_sound_6000_right.wav
+END
+failure.wav
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/!svn/ver/35/behavior/code/experiments/RatBehaviorGeneral/Sounds/failure.wav
+END
+NRsuccess.wav
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/!svn/ver/35/behavior/code/experiments/RatBehaviorGeneral/Sounds/NRsuccess.wav
+END
+complete.wav
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/!svn/ver/35/behavior/code/experiments/RatBehaviorGeneral/Sounds/complete.wav
+END
+success.wav
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/!svn/ver/35/behavior/code/experiments/RatBehaviorGeneral/Sounds/success.wav
+END
+acquire.wav
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/!svn/ver/35/behavior/code/experiments/RatBehaviorGeneral/Sounds/acquire.wav
+END
+start.wav
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/!svn/ver/35/behavior/code/experiments/RatBehaviorGeneral/Sounds/start.wav
+END
+blocked_trial.wav
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/!svn/ver/35/behavior/code/experiments/RatBehaviorGeneral/Sounds/blocked_trial.wav
+END
+start_Nuo.wav
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/!svn/ver/35/behavior/code/experiments/RatBehaviorGeneral/Sounds/start_Nuo.wav
+END
