@@ -52,14 +52,67 @@ def get_data_for_figure(animal_name, sessions):
     #make a dict where keys are (size, rotation) tuples and vals are a list of "success", "failure", or "ignore" strings
     trial_outcomes = make_list_of_behavior_outcomes_for_size_rot_grid(all_trials)
     pct_correct_data = get_pct_correct_for_animal(trial_outcomes)
+
     return {
         "animal_name": animal_name,
         "pct_correct_data": pct_correct_data
     }
 
 def make_a_figure(data_for_animal):
-    raise NotImplementedError
+    x = [-60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0] #rotations
+    y = [15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0] #sizes
+    X, Y = np.meshgrid(x, y)
+    #setup grid coordinates for mapping function
 
+    #TODO dont rely on a hard-coded grid; look into numpy functions for this?
+    grid = [
+        [(15.0, -60.0), (20.0, -60.0), (25.0, -60.0), (30.0, -60.0), (35.0, -60.0), (40.0, -60.0), (45.0, -60.0)],
+        [(15.0, -45.0), (20.0, -45.0), (25.0, -45.0), (30.0, -45.0), (35.0, -45.0), (40.0, -45.0), (45.0, -45.0)],
+        [(15.0, -30.0), (20.0, -30.0), (25.0, -30.0), (30.0, -30.0), (35.0, -30.0), (40.0, -30.0), (45.0, -30.0)],
+        [(15.0, -15.0), (20.0, -15.0), (25.0, -15.0), (30.0, -15.0), (35.0, -15.0), (40.0, -15.0), (45.0, -15.0)],
+        [(15.0, 0.0), (20.0, 0.0), (25.0, 0.0), (30.0, 0.0), (35.0, 0.0), (40.0, 0.0), (45.0, 0.0)],
+        [(15.0, 15.0), (20.0, 15.0), (25.0, 15.0), (30.0, 15.0), (35.0, 15.0), (40.0, 15.0), (45.0, 15.0)],
+        [(15.0, 30.0), (20.0, 30.0), (25.0, 30.0), (30.0, 30.0), (35.0, 30.0), (40.0, 30.0), (45.0, 30.0)],
+        [(15.0, 45.0), (20.0, 45.0), (25.0, 45.0), (30.0, 45.0), (35.0, 45.0), (40.0, 45.0), (45.0, 45.0)],
+        [(15.0, 60.0), (20.0, 60.0), (25.0, 60.0), (30.0, 60.0), (35.0, 60.0), (40.0, 60.0), (45.0, 60.0)],
+        [(15.0, 75.0), (20.0, 75.0), (25.0, 75.0), (30.0, 75.0), (35.0, 75.0), (40.0, 75.0), (45.0, 75.0)]
+    ]
+    #will store performance for each block in the grid
+    intensity = [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
+    ]
+    #map grid (size, rotation) tuples to % correct, and add that or NaN to intensity vals
+    for i in xrange(len(grid)):
+        row = grid[i]
+        for e in xrange(len(row)):
+            sizerot_coords = row[e]
+            try:
+                pct_correct = data_for_animal["pct_correct_data"][sizerot_coords]
+            except KeyError:
+                pct_correct = np.nan
+            intensity[i].append(pct_correct)
+
+
+    intensity = np.ma.masked_where(np.isnan(intensity), intensity)
+    plt.close('all')
+    plt.pcolormesh(X, Y, intensity.T, cmap="RdBu", vmin=0.0, vmax=100.0)
+    bar = plt.colorbar()
+    bar.set_label("% correct", rotation=270, labelpad=10)
+    plt.axis('tight')
+    plt.grid(True, which='minor')
+    plt.title(data_for_animal["animal_name"] + " phase 4 performance")
+    plt.xlabel("Stimulus rotation in depth (degrees)")
+    plt.ylabel("Stimulus size (degrees visual angle)")
+    plt.show()
 
 def get_pct_correct_for_animal(trial_outcomes):
     result = {}
@@ -179,7 +232,6 @@ def get_session_trials(animal_name, session_filename):
     return trials
 
 if __name__ == "__main__":
-    outcomes_dict = get_data_for_figure("AB5", ["AB5_141003.mwk", "AB5_141006.mwk", "AB5_141007.mwk", "AB5_141008.mwk", "AB5_141009.mwk", "AB5_141010.mwk", "AB5_141013.mwk", "AB5_141014.mwk", "AB5_141015.mwk", "AB5_141016.mwk", "AB5_141017.mwk", "AB5_141020.mwk", "AB5_141021.mwk", "AB5_141023.mwk"])
-    for k, v in outcomes_dict.iteritems():
-        print k, v
+    animals_and_sessions = get_animals_and_their_session_filenames('input/phase4')
+    analyze_sessions(animals_and_sessions)
 
