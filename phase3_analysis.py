@@ -27,6 +27,12 @@ def get_animals_and_their_session_filenames(path):
     return result
 
 def analyze_sessions(animals_and_sessions, graph_summary_stats=False):
+    '''
+    Use the multiprocessing module to analyze sessions from multiple animals in
+    parallel. Add stats from each animal (a dict, the result of
+    get_data_for_figure()) to the all_data list for further processing (i.e.
+    get_summary_stats_data()).
+    '''
     pool = multiprocessing.Pool(None)
     results = []
     for animal, sessions in animals_and_sessions.iteritems():
@@ -47,6 +53,9 @@ def analyze_sessions(animals_and_sessions, graph_summary_stats=False):
         make_summary_stats_figure(data)
 
 def make_summary_stats_figure(data):
+    '''
+    Plots summary stats data (i.e. mean, standard dev, etc) for all animals.
+    '''
 
     plt.close('all')
 
@@ -192,6 +201,9 @@ def make_summary_stats_figure(data):
     plt.show()
 
 def get_summary_stats_data(all_data):
+    '''
+    Returns a dict with summary statistics for all animals.
+    '''
     result1 = {} #keys=rotation_float vals=list of percentage floats for each animal
     result2 = {} #keys=rotation_float vals=list of num_trials ints for each animal
     for animal_data in all_data:
@@ -298,6 +310,10 @@ def calc_summary_stats(list_of_floats):
     return mean, std_dev
 
 def make_a_figure(data_for_animal):
+    '''
+    Makes graphs with data from each INDIVIDUAL animal. data_for_animal is a dict--
+    the result from get_data_for_figure()
+    '''
     plt.close('all')
 
     f, ax_arr = plt.subplots(2, 1)
@@ -383,6 +399,9 @@ def make_a_figure(data_for_animal):
     plt.show()
 
 def get_data_for_figure(animal_name, sessions):
+    '''
+    Returns a dict with data for one animal.
+    '''
     all_trials = get_trials_from_all_sessions(animal_name, sessions)
     all_size_30 = get_size_30_trial_results(all_trials)
     rotations, pct_corrects, totals = get_stats_for_each_rotation(all_size_30)
@@ -407,6 +426,11 @@ def get_data_for_figure(animal_name, sessions):
     }
 
 def get_performance_by_nth_time_seen(all_trials):
+    '''
+    Not finished, but the idea is to get performance in all rotations (y axis)
+    as a function of the number of times each rotation has been presented (x axis).
+    See Zoccolan 2009 Fig. 3B to get the idea.
+    '''
     tmp = {} #keys=rotation float values=list of behavior_outcome events in order of appearance
     for trial in all_trials:
         if trial["stm_size"] == 30.0:
@@ -450,6 +474,10 @@ def get_size_40_outcomes(all_trials):
     return result
 
 def get_pct_correct_at_size_40(behavior_outcome_list):
+    '''
+    Use this to get performance for size 40 (default) stimuli during presentation
+    of stimuli in the "cross."
+    '''
     success = 0
     failure = 0
     ignore = 0
@@ -472,6 +500,11 @@ def get_pct_correct_at_size_40(behavior_outcome_list):
     return pct_correct
 
 def get_progress_over_time(all_trials, trials_per_bin=50):
+    '''
+    Makes it easy to visualize rotation progress for each animal. Use this to
+    decide when to switch rotation in depth direction (i.e. change direction when the
+    animal reaches max rotation to the right or left).
+    '''
     num_trials_range = []
     max_rotation_right_in_range = []
     max_rotation_left_in_range = []
@@ -560,10 +593,12 @@ def get_session_trials(animal_name, session_filename):
     e.g. [{"trial_num": 1,
            "behavior_outcome": "failure",
            "stm_size": 40.0,
+           "stm_rotation": 0.0
            },
           {"trial_num": 2,
            "behavior_outcome": "success",
-           "stm_size": 35.0
+           "stm_size": 30.0,
+           "stm_rotation": 15.0
            }]
 
     :param animal_name: name of the animal string
