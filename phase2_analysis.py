@@ -30,7 +30,7 @@ def get_animals_and_their_session_filenames(path):
 
 def analyze_sessions(animals_and_sessions, graph_summary_stats=False):
     '''
-    Starts analysis for each animals' sessions in a new process to use cores.
+    Starts analysis for each animals' sessions in a new process to use all CPU cores.
         We don't want to wait all day for this, y'all.
 
     :param animals_and_sessions: a dict with animal names as keys and
@@ -77,6 +77,9 @@ def make_summary_stats_figure(data, bins_in_order, colors=[
         "orangered",
         "black"
     ]):
+    '''
+    Makes a figure with data from all animals (ie averages, std dev, etc)
+    '''
 
     plt.close('all')
 
@@ -443,6 +446,9 @@ def sort_x_y_pairs_by_x_val(x_vals_list, y_vals_list):
 def get_bootstrapped_pct_correct_and_std_dev(
     session_stats_list,
     sessions_per_bin=8):
+    '''
+    Gets stats for one animal. Standard deviations come from bootstrap resample.
+    '''
     stats_in_bins = split_list_into_sublists(
         session_stats_list,
         sessions_per_bin)
