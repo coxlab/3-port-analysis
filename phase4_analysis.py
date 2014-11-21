@@ -28,6 +28,10 @@ def get_animals_and_their_session_filenames(path):
     return result
 
 def analyze_sessions(animals_and_sessions, graph_summary_stats=False):
+    '''
+    This is basically the same as the eponymous function in phase3_analysis.py;
+    see documentation there.
+    '''
     pool = multiprocessing.Pool(None)
     results = []
     for animal, sessions in animals_and_sessions.iteritems():
@@ -110,13 +114,13 @@ def make_summary_stats_figure(data_for_all_animals):
         for e in xrange(len(row)):
             sizerot_coords = row[e]
             try:
-                pct_correct = data_for_all_animals[sizerot_coords]
+                pct_correct = data_for_all_animals[sizerot_coords] #get performance average at grid position
             except KeyError:
-                pct_correct = np.nan
+                pct_correct = np.nan #if no data for this grid position, mask the plot value with numpy NaN
             intensity[i].append(pct_correct)
 
 
-    intensity = np.ma.masked_where(np.isnan(intensity), intensity)
+    intensity = np.ma.masked_where(np.isnan(intensity), intensity) #mask grid positions with no performance data
     plt.close('all')
     plt.pcolormesh(X, Y, intensity.T, cmap="hot", vmin=40.0, vmax=100.0)
     bar = plt.colorbar()

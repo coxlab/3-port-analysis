@@ -44,17 +44,19 @@ def analyze_sessions(animals_and_sessions, graph_summary_stats=False):
 
     all_data = []
     for each in results:
-        data_for_animal = each.get()
-        all_data.append(data_for_animal)
-        make_a_figure(data_for_animal)
+        data_for_animal = each.get() #returns result of get_data_for_figure()
+        all_data.append(data_for_animal) #need this to stay around for summary statistics
+        make_a_figure(data_for_animal) #make a figure with data for this animal
 
     if graph_summary_stats:
-        data = get_summary_stats_data(all_data)
-        make_summary_stats_figure(data)
+        data = get_summary_stats_data(all_data) #process all animal data
+        make_summary_stats_figure(data) #make plots with processed summary stats
 
 def make_summary_stats_figure(data):
     '''
     Plots summary stats data (i.e. mean, standard dev, etc) for all animals.
+
+    @param data: a dict with all our summary stats data, from get_summary_stats_data()
     '''
 
     plt.close('all')
@@ -203,6 +205,9 @@ def make_summary_stats_figure(data):
 def get_summary_stats_data(all_data):
     '''
     Returns a dict with summary statistics for all animals.
+
+    @param all_data: a list of dicts where each dict is one animal's performance data;
+        each dict is the return value from get_data_for_figure()
     '''
     result1 = {} #keys=rotation_float vals=list of percentage floats for each animal
     result2 = {} #keys=rotation_float vals=list of num_trials ints for each animal
@@ -257,6 +262,7 @@ def get_summary_stats_data(all_data):
 
     size_40_mean_pct_correct, size_40_std_dev = calc_summary_stats(size_40_pct_corrects)
 
+    #nth time seen functions arent finished, but this should work when/if they are
     nth_performances = []
     for animal_data in all_data:
         nth_performances.append(animal_data["nth_time_seen_data"]["nth_performance"])
@@ -312,10 +318,12 @@ def calc_summary_stats(list_of_floats):
 def make_a_figure(data_for_animal):
     '''
     Makes graphs with data from each INDIVIDUAL animal. data_for_animal is a dict--
-    the result from get_data_for_figure()
+    the result from get_data_for_figure()--see that documentation for more info
     '''
     plt.close('all')
 
+    #this looks long and complicated, but it's basically just making
+    #a plot over and over again with different data
     f, ax_arr = plt.subplots(2, 1)
     f.suptitle(data_for_animal["animal_name"] + " phase 3 performance (all stimuli 30 deg. visual angle size)")
 
@@ -401,14 +409,17 @@ def make_a_figure(data_for_animal):
 def get_data_for_figure(animal_name, sessions):
     '''
     Returns a dict with data for one animal.
+
+    @param animal_name: a string
+    @param sessions: a list of filename strings
     '''
-    all_trials = get_trials_from_all_sessions(animal_name, sessions)
-    all_size_30 = get_size_30_trial_results(all_trials)
-    rotations, pct_corrects, totals = get_stats_for_each_rotation(all_size_30)
-    progress_data = get_progress_over_time(all_trials)
-    all_size_40 = get_size_40_outcomes(all_trials)
-    pct_correct_40 = get_pct_correct_at_size_40(all_size_40)
-    nth_time_seen, nth_performance = get_performance_by_nth_time_seen(all_trials)
+    all_trials = get_trials_from_all_sessions(animal_name, sessions) #list of trial dicts
+    all_size_30 = get_size_30_trial_results(all_trials) #list of all trial dicts where stm_size was 30.0
+    rotations, pct_corrects, totals = get_stats_for_each_rotation(all_size_30) #returns 3 lists with rotation floats, performance floats, and sample size ints
+    progress_data = get_progress_over_time(all_trials) #returns a dict with data about the range of rotations tested over time
+    all_size_40 = get_size_40_outcomes(all_trials) ##list of all trial dicts where stm_size was 40.0
+    pct_correct_40 = get_pct_correct_at_size_40(all_size_40) #returns a float for percent correct at size 40.0
+    nth_time_seen, nth_performance = get_performance_by_nth_time_seen(all_trials) #not finished, basically ignore this
 
     print "Finished analysis for ", animal_name
     return {
@@ -477,6 +488,9 @@ def get_pct_correct_at_size_40(behavior_outcome_list):
     '''
     Use this to get performance for size 40 (default) stimuli during presentation
     of stimuli in the "cross."
+
+    @param behavior_outcome_list: a list of dicts where the dicts look like those from
+        get_session_trials()
     '''
     success = 0
     failure = 0
@@ -504,6 +518,8 @@ def get_progress_over_time(all_trials, trials_per_bin=50):
     Makes it easy to visualize rotation progress for each animal. Use this to
     decide when to switch rotation in depth direction (i.e. change direction when the
     animal reaches max rotation to the right or left).
+
+    @param all_trials: a list of dicts where the dicts look like those from get_session_trials()
     '''
     num_trials_range = []
     max_rotation_right_in_range = []
@@ -535,6 +551,13 @@ def get_progress_over_time(all_trials, trials_per_bin=50):
 
 
 def get_stats_for_each_rotation(all_size_30_trials):
+    '''
+    Returns 3 lists. A list of rotations, a list of performance at those rotations,
+    and a list of the sample size at those rotations.
+
+    @param all_size_30_trials: a list of trial dicts (trials dicts look like the ones
+        in the documentation for get_session_trials())
+    '''
     rotations = []
     pct_corrects = []
     total_trials = []
