@@ -259,7 +259,7 @@ def get_session_statistics(animal_name, session_filename):
     '''
 
     #TODO: unfuck this: hard coded paths not ideal for code reuse
-    path = 'input/' + animal_name + '/' + session_filename
+    path = 'input/' + 'phase1/' + animal_name + '/' + session_filename
 
     df = pymworks.open_file(path)
     events = df.get_events(["Announce_TrialStart", "Announce_TrialEnd",
